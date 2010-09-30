@@ -1,0 +1,7 @@
+#include <winuser.h>
+#include "resource.h"
+
+IDI_SYMBOL              		ICON        "s25update.ico"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID 	RT_MANIFEST "s25update.exe.manifest"
+
