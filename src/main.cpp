@@ -1,4 +1,4 @@
-// $Id: main.cpp 6769 2010-09-30 13:30:45Z FloSoft $
+// $Id: main.cpp 6927 2010-12-23 15:43:21Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -51,12 +51,13 @@ using namespace std;
 #endif
 
 #define HTTPHOST "http://nightly.ra-doersch.de/s25client/"
+#define STABLEPATH "stable/"
 #define HTTPPATH TARGET "." ARCH
-#define FILELIST HTTPHOST HTTPPATH "/files"
-#define OLDFILELIST HTTPHOST HTTPPATH ".old/files"
+#define FILELIST HTTPPATH "/files"
+#define OLDFILELIST HTTPPATH ".old/files"
 
-#define LINKLIST HTTPHOST HTTPPATH "/links"
-#define OLDLINKLIST HTTPHOST HTTPPATH ".old/links"
+#define LINKLIST HTTPPATH "/links"
+#define OLDLINKLIST HTTPPATH ".old/links"
 
 #ifdef _WIN32
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,7 +259,8 @@ string md5sum(string file)
 int main(int argc, char *argv[])
 {
 	bool verbose = false;
-	std::string path = argv[0];
+	bool nightly = true;
+	string path = argv[0];
 	path = path.substr(0, path.find_last_of("/\\"));
 
 	if(argc > 1)
@@ -269,18 +271,24 @@ int main(int argc, char *argv[])
 				verbose = true;
 			if(strcmp(argv[i], "--dir") == 0 || strcmp(argv[i], "-d") == 0 )
 				path = argv[++i];
+			if(strcmp(argv[i], "--stable") == 0 || strcmp(argv[i], "-s") == 0 )
+				nightly = false;
 		}
 	}
 
 #ifdef _WIN32
 	int lastp = path.find_last_of("/\\");
-	std::string last = path.substr(lastp+1);
-	if(lastp != std::string::npos && last == "update")
+	string last = path.substr(lastp+1);
+	if(lastp != string::npos && last == "update")
 		path = path.substr(0, lastp);
 #endif
 
+	string httpbase = HTTPHOST;
+	if(!nightly)
+		httpbase += STABLEPATH;
+
 	if(chdir(path.c_str()) < 0)
-		std::cerr << "Warning: Failed to set working directory: " << strerror(errno) << std::endl;
+		cerr << "Warning: Failed to set working directory: " << strerror(errno) << endl;
 
 	// initialize curl
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -293,10 +301,10 @@ int main(int argc, char *argv[])
 	map<string,string> links;
 
 	// download filelist
-	if(!DownloadFile(FILELIST, filelist))
+	if(!DownloadFile(httpbase + string(FILELIST), filelist))
 	{
 		cout << "Warning: Was not able to get current masterfile, trying old one" << endl;
-		if(!DownloadFile(OLDFILELIST, filelist))
+		if(!DownloadFile(httpbase + string(OLDFILELIST), filelist))
 		{
 			cout << "Update failed: Downloading the masterfile was unsuccessful!" << endl;
 	#if defined _DEBUG && defined _MSC_VER
@@ -308,10 +316,10 @@ int main(int argc, char *argv[])
 	}
 
 	// download linklist
-	if(!DownloadFile(LINKLIST, linklist))
+	if(!DownloadFile(httpbase + string(LINKLIST), linklist))
 	{
 		cout << "Warning: Was not able to get current master-link-file, trying old one" << endl;
-		if(!DownloadFile(OLDLINKLIST, linklist))
+		if(!DownloadFile(httpbase + string(OLDLINKLIST), linklist))
 		{
 			cout << "Update failed: Downloading the master-link-file was unsuccessful!" << endl;
 	#if defined _DEBUG && defined _MSC_VER
@@ -402,7 +410,7 @@ int main(int argc, char *argv[])
 				progress << " to \"" << setw(longestpath) << path << "\"";
 			
 			progress << ": ";
-			string url = string(HTTPHOST) + string(HTTPPATH) + "/" +  bzfile;
+			string url = httpbase + string(HTTPPATH) + "/" +  bzfile;
 			string fdata = "";
 
 #ifdef _WIN32
@@ -475,7 +483,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
 		//cout << "creating file " << it->second << endl;
 		string path = it->first.substr(0, it->first.rfind('/') + 1);
-		std::string target = path + it->second;
+		string target = path + it->second;
 
 		CopyFileA(it->first.c_str(), target.c_str(), FALSE);
 #else
