@@ -98,7 +98,6 @@
     <ClInclude Include="..\..\src\main.h" />
     <ClInclude Include="..\..\src\md5.h" />
     <ClInclude Include="..\..\src\md5sum.h" />
-    <ClInclude Include="..\resource.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
