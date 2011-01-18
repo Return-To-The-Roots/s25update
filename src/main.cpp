@@ -1,4 +1,4 @@
-// $Id: main.cpp 6927 2010-12-23 15:43:21Z FloSoft $
+// $Id: main.cpp 6993 2011-01-18 17:55:58Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -250,6 +250,36 @@ string md5sum(string file)
 	return digest;
 }
 
+#ifdef _WIN32
+///////////////////////////////////////////////////////////////////////////////
+/**
+ *  prints the last error (win only)
+ *
+ *  @author FloSoft
+ */
+void print_last_error()
+{
+	LPVOID lpMsgBuf;
+	FormatMessage( 
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+		FORMAT_MESSAGE_FROM_SYSTEM | 
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		GetLastError(),
+		0, // Default language
+		(LPTSTR) &lpMsgBuf,
+		0,
+		NULL 
+		);
+	// Process any inserts in lpMsgBuf.
+	// ...
+	// Display the string.
+	std::cerr << (LPCTSTR)lpMsgBuf << std::endl;
+	// Free the buffer.
+	LocalFree( lpMsgBuf );
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 /**
  *  main function
@@ -276,19 +306,57 @@ int main(int argc, char *argv[])
 		}
 	}
 
-#ifdef _WIN32
-	int lastp = path.find_last_of("/\\");
-	string last = path.substr(lastp+1);
-	if(lastp != string::npos && last == "update")
-		path = path.substr(0, lastp);
-#endif
-
 	string httpbase = HTTPHOST;
 	if(!nightly)
 		httpbase += STABLEPATH;
 
 	if(chdir(path.c_str()) < 0)
 		cerr << "Warning: Failed to set working directory: " << strerror(errno) << endl;
+
+#ifdef _WIN32
+	HANDLE hFile = CreateFile("write.test", GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, NULL, NULL);
+	if(hFile == INVALID_HANDLE_VALUE)
+	{
+		if(GetLastError() != ERROR_ACCESS_DENIED)
+		{
+			print_last_error();
+			return 1;
+		}
+
+		std::cout << "Cannot write to update directory, trying to elevate to administrator" << std::endl;
+
+		std::stringstream arguments;
+		for(int i = 1; i < argc; ++i)
+			arguments << argv[i];
+
+		// Launch itself as administrator.
+		SHELLEXECUTEINFO sei = { sizeof(sei) };
+		sei.lpVerb = "runas";
+		sei.lpFile = argv[0];
+		sei.hwnd = GetConsoleWindow();
+		sei.lpParameters = arguments.str().c_str();
+		sei.nShow = SW_NORMAL;
+		sei.fMask = SEE_MASK_NOASYNC;
+
+		if (!ShellExecuteEx(&sei))
+		{
+			DWORD dwError = GetLastError();
+			if (dwError == ERROR_CANCELLED)
+			{
+				std::cerr << "You refused to elevate - cannot update" << std::endl;
+				return 1;
+			}
+		}
+
+		std::cout << "Update should have been run successfully" << std::endl;
+		return 0;
+	}
+	else
+	{
+		CloseHandle(hFile);
+		DeleteFile("write.test");
+	}
+#endif
 
 	// initialize curl
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -355,7 +423,7 @@ int main(int argc, char *argv[])
 		// find longest name and path
 		if(name.length() > longestname)
 			longestname = name.length();
-		if(path.length() > longestname)
+		if(path.length() > longestpath)
 			longestpath = path.length();
 	}
 
@@ -404,12 +472,16 @@ int main(int argc, char *argv[])
 			CreateDirRecursive(path);
 
 			stringstream progress;
-			progress << "Downloading file \"" << setw(longestname) << setiosflags(ios::left) << name << "\"";
+			progress << "Updating \"" << /*setw(longestname) << */setiosflags(ios::left) << name << "\"";
 			
 			if(verbose)
-				progress << " to \"" << setw(longestpath) << path << "\"";
-			
+				progress << " to \"" << /*setw(longestpath) << */path << "\"";
+
 			progress << ": ";
+
+			while(65 - progress.str().size() > 0)
+				progress << " ";
+
 			string url = httpbase + string(HTTPPATH) + "/" +  bzfile;
 			string fdata = "";
 
@@ -441,6 +513,18 @@ int main(int argc, char *argv[])
 				else
 				{
 					FILE *fp = fopen(tfile.c_str(), "wb");
+#ifdef _WIN32
+					if(!fp)
+					{
+						// move file out of the way ...
+						if(!MoveFileEx(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
+						{
+							cout << "failed to move blocked file \"" << tfile << "\" out of the way ..." << endl;
+							return 1;
+						}
+						fp = fopen(tfile.c_str(), "wb");
+					}
+#endif
 					if(!fp)
 					{
 						cout << "decompression failed: compressed data corrupt?" << endl;

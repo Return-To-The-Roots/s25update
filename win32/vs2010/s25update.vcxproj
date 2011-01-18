@@ -84,7 +84,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
       <SubSystem>Console</SubSystem>
     </Link>
     <Manifest />
