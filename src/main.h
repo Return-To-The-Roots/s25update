@@ -1,4 +1,4 @@
-// $Id: main.h 6582 2010-07-16 11:23:35Z FloSoft $
+// $Id: main.h 7005 2011-01-27 22:01:07Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -29,6 +29,10 @@
 	#include <crtdbg.h>
 #else
     #include <assert.h>
+#endif
+
+#ifndef SEE_MASK_NOASYNC
+	#define SEE_MASK_NOASYNC          0x00000100
 #endif
 	
 	int chdir(const char *p) { return (SetCurrentDirectory(p) == TRUE ? 0 : -1); }

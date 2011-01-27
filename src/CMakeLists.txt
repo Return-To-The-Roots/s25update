@@ -1,5 +1,5 @@
 ################################################################################
-### $Id: CMakeLists.txt 6760 2010-09-27 15:28:48Z FloSoft $
+### $Id: CMakeLists.txt 7005 2011-01-27 22:01:07Z FloSoft $
 ################################################################################
 
 INCLUDE(FindCURL)
@@ -37,7 +37,11 @@ IF ( "${COMPILEFOR}" STREQUAL "windows" )
 	ADD_DEFINITIONS("-DAFX_TARG_DEU")
 	ADD_DEFINITIONS("-D_WIN32_WCE")
 
-	FIND_PROGRAM(WINDRES NAMES windres i686-mingw32-windres i586-mingw32msvc-windres DOC "path to mingw's windres executable")
+	IF ( "${COMPILEARCH}" STREQUAL "i386" )
+		FIND_PROGRAM(WINDRES NAMES windres i686-pc-mingw32-windres i686-mingw32-windres i586-mingw32msvc-windres DOC "path to mingw's windres executable")
+	ELSE ( "${COMPILEARCH}" STREQUAL "i386" )
+		FIND_PROGRAM(WINDRES NAMES windres x86_64-pc-mingw32-windres x86_64-mingw32-windres amd64-mingw32msvc-windres DOC "path to mingw's windres executable")
+	ENDIF ( "${COMPILEARCH}" STREQUAL "i386" )
 	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o COMMAND ${WINDRES} -I${CMAKE_CURRENT_SOURCE_DIR}/../win32/ -i${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc -o ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o)
 
 	SET(s25update_SRCS ${s25update_SRCS} s25update.res.o)
