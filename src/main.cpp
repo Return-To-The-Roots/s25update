@@ -1,4 +1,4 @@
-// $Id: main.cpp 6993 2011-01-18 17:55:58Z FloSoft $
+// $Id: main.cpp 7007 2011-01-29 13:29:12Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -42,17 +42,16 @@ using namespace std;
 #	error You have to set TARGET to your platform (windows/linux/apple)
 #endif
 
-#ifdef _WIN32
-#	define ARCH "i386"
-#endif
-
 #ifndef ARCH
 #	error You have to set ARCH to your architecture (i386/x86_64/ppc)
 #endif
 
 #define HTTPHOST "http://nightly.ra-doersch.de/s25client/"
+#define HTTPPATH TARGET "." ARCH "/updater"
+
 #define STABLEPATH "stable/"
-#define HTTPPATH TARGET "." ARCH
+#define NIGHTLYPATH "nightly/"
+
 #define FILELIST HTTPPATH "/files"
 #define OLDFILELIST HTTPPATH ".old/files"
 
@@ -307,7 +306,9 @@ int main(int argc, char *argv[])
 	}
 
 	string httpbase = HTTPHOST;
-	if(!nightly)
+	if(nightly)
+		httpbase += NIGHTLYPATH;
+	else
 		httpbase += STABLEPATH;
 
 	if(chdir(path.c_str()) < 0)
