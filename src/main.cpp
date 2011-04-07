@@ -1,4 +1,4 @@
-// $Id: main.cpp 7007 2011-01-29 13:29:12Z FloSoft $
+// $Id: main.cpp 7123 2011-04-07 07:30:20Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -46,17 +46,13 @@ using namespace std;
 #	error You have to set ARCH to your architecture (i386/x86_64/ppc)
 #endif
 
-#define HTTPHOST "http://nightly.ra-doersch.de/s25client/"
-#define HTTPPATH TARGET "." ARCH "/updater"
-
+#define HTTPHOST "http://nightly.siedler25.org/s25client/"
 #define STABLEPATH "stable/"
 #define NIGHTLYPATH "nightly/"
-
-#define FILELIST HTTPPATH "/files"
-#define OLDFILELIST HTTPPATH ".old/files"
-
-#define LINKLIST HTTPPATH "/links"
-#define OLDLINKLIST HTTPPATH ".old/links"
+#define TARGETPATH TARGET "." ARCH
+#define FILEPATH "/updater"
+#define FILELIST "/files"
+#define LINKLIST "/links"
 
 #ifdef _WIN32
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,12 +301,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	string httpbase = HTTPHOST;
-	if(nightly)
-		httpbase += NIGHTLYPATH;
-	else
-		httpbase += STABLEPATH;
-
 	if(chdir(path.c_str()) < 0)
 		cerr << "Warning: Failed to set working directory: " << strerror(errno) << endl;
 
@@ -369,39 +359,57 @@ int main(int argc, char *argv[])
 	map<string,string> files;
 	map<string,string> links;
 
+	string httpbase = HTTPHOST;
+	if(nightly)
+		httpbase += NIGHTLYPATH;
+	else
+		httpbase += STABLEPATH;
+	
+	std::stringstream url;
+
 	// download filelist
-	if(!DownloadFile(httpbase + string(FILELIST), filelist))
+	url << httpbase << TARGETPATH << FILEPATH << FILELIST;
+	if(!DownloadFile(url.str(), filelist))
 	{
-		cout << "Warning: Was not able to get current masterfile, trying old one" << endl;
-		if(!DownloadFile(httpbase + string(OLDFILELIST), filelist))
+		cout << "Warning: Was not able to get current masterfile, trying older ones" << endl;
+		
+		bool ok = false;
+		for(int i = 0; i < 5; ++i)
 		{
-			cout << "Update failed: Downloading the masterfile was unsuccessful!" << endl;
-	#if defined _DEBUG && defined _MSC_VER
+			url.str("");
+			url << httpbase << TARGETPATH << "." << i << FILEPATH << FILELIST;
+			if(DownloadFile(url.str(), filelist))
+			{
+				ok = true;
+				
+				// set base for later use
+				url.str("");
+				url << httpbase << TARGETPATH << "." << i << FILEPATH;
+				httpbase = url.str();
+				
+				break;
+			}
+			cout << "Warning: Was not able to get masterfile " << i << ", trying older one" << endl;
+		}
+		if(!ok)
+		{
+#if defined _DEBUG && defined _MSC_VER
 			cout << "Press return to continue . . ." << flush;
 			cin.get();
-	#endif
+#endif
 			return 1;
 		}
 	}
+	
+	// httpbase now includes targetpath and filepath
 
 	// download linklist
-	if(!DownloadFile(httpbase + string(LINKLIST), linklist))
-	{
-		cout << "Warning: Was not able to get current master-link-file, trying old one" << endl;
-		if(!DownloadFile(httpbase + string(OLDLINKLIST), linklist))
-		{
-			cout << "Update failed: Downloading the master-link-file was unsuccessful!" << endl;
-	#if defined _DEBUG && defined _MSC_VER
-			cout << "Press return to continue . . ." << flush;
-			cin.get();
-	#endif
-			return 1;
-		}
-	}
+	url.str("");
+	url << httpbase << LINKLIST;
+	if(!DownloadFile(url.str(), linklist))
+		cout << "Warning: Was not able to get linkfile, ignoring" << endl;
 
 	stringstream flstream(filelist);
-
-	//cout << filelist << endl;
 	
 	// parse filelist
 	string line;
@@ -430,8 +438,6 @@ int main(int argc, char *argv[])
 
 	stringstream llstream(linklist);
 
-	//cout << linklist << endl;
-	
 	// parse linklist
 	while( getline(llstream, line) )
 	{
@@ -483,14 +489,15 @@ int main(int argc, char *argv[])
 			while(65 - progress.str().size() > 0)
 				progress << " ";
 
-			string url = httpbase + string(HTTPPATH) + "/" +  bzfile;
+			url.str("");
+			url << httpbase + "/" +  bzfile;
 			string fdata = "";
 
 #ifdef _WIN32
 			replace_all(bzfile, '/', '\\');
 #endif
 			// download the file
-			DownloadFile(url, fdata, bzfile, progress.str().c_str());
+			DownloadFile(url.str(), fdata, bzfile, progress.str().c_str());
 
 			cout << " - ";
 
