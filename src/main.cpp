@@ -1,4 +1,4 @@
-// $Id: main.cpp 7123 2011-04-07 07:30:20Z FloSoft $
+// $Id: main.cpp 7124 2011-04-07 07:40:59Z FloSoft $
 //
 // Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -49,7 +49,6 @@ using namespace std;
 #define HTTPHOST "http://nightly.siedler25.org/s25client/"
 #define STABLEPATH "stable/"
 #define NIGHTLYPATH "nightly/"
-#define TARGETPATH TARGET "." ARCH
 #define FILEPATH "/updater"
 #define FILELIST "/files"
 #define LINKLIST "/links"
@@ -368,8 +367,14 @@ int main(int argc, char *argv[])
 	std::stringstream url;
 
 	// download filelist
-	url << httpbase << TARGETPATH << FILEPATH << FILELIST;
-	if(!DownloadFile(url.str(), filelist))
+	url << httpbase << TARGET << "." << ARCH << FILEPATH << FILELIST;
+	if(DownloadFile(url.str(), filelist))
+	{
+		url.str("");
+		url << httpbase << TARGET << "." << ARCH << FILEPATH;
+		httpbase = url.str();
+	}
+	else
 	{
 		cout << "Warning: Was not able to get current masterfile, trying older ones" << endl;
 		
@@ -377,19 +382,19 @@ int main(int argc, char *argv[])
 		for(int i = 0; i < 5; ++i)
 		{
 			url.str("");
-			url << httpbase << TARGETPATH << "." << i << FILEPATH << FILELIST;
+			url << httpbase << TARGET << "." << ARCH << "." << i+1 << FILEPATH << FILELIST;
 			if(DownloadFile(url.str(), filelist))
 			{
 				ok = true;
 				
 				// set base for later use
 				url.str("");
-				url << httpbase << TARGETPATH << "." << i << FILEPATH;
+				url << httpbase << TARGET << "." << ARCH << "." << i+1 << FILEPATH;
 				httpbase = url.str();
 				
 				break;
 			}
-			cout << "Warning: Was not able to get masterfile " << i << ", trying older one" << endl;
+			cout << "Warning: Was not able to get masterfile " << i+1 << ", trying older one" << endl;
 		}
 		if(!ok)
 		{
