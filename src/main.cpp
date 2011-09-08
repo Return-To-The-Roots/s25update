@@ -1,6 +1,6 @@
-// $Id: main.cpp 7124 2011-04-07 07:40:59Z FloSoft $
+// $Id: main.cpp 7521 2011-09-08 20:45:55Z FloSoft $
 //
-// Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 		cerr << "Warning: Failed to set working directory: " << strerror(errno) << endl;
 
 #ifdef _WIN32
-	HANDLE hFile = CreateFile("write.test", GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, NULL, NULL);
+	HANDLE hFile = CreateFileA("write.test", GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, NULL, NULL);
 	if(hFile == INVALID_HANDLE_VALUE)
 	{
 		if(GetLastError() != ERROR_ACCESS_DENIED)
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 			arguments << argv[i];
 
 		// Launch itself as administrator.
-		SHELLEXECUTEINFO sei = { sizeof(sei) };
+		SHELLEXECUTEINFOA sei = { sizeof(sei) };
 		sei.lpVerb = "runas";
 		sei.lpFile = argv[0];
 		sei.hwnd = GetConsoleWindow();
@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
 		sei.nShow = SW_NORMAL;
 		sei.fMask = SEE_MASK_NOASYNC;
 
-		if (!ShellExecuteEx(&sei))
+		if (!ShellExecuteExA(&sei))
 		{
 			DWORD dwError = GetLastError();
 			if (dwError == ERROR_CANCELLED)
@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		CloseHandle(hFile);
-		DeleteFile("write.test");
+		DeleteFileA("write.test");
 	}
 #endif
 
@@ -530,7 +530,7 @@ int main(int argc, char *argv[])
 					if(!fp)
 					{
 						// move file out of the way ...
-						if(!MoveFileEx(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
+						if(!MoveFileExA(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
 						{
 							cout << "failed to move blocked file \"" << tfile << "\" out of the way ..." << endl;
 							return 1;

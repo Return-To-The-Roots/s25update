@@ -1,6 +1,6 @@
-// $Id: main.h 7005 2011-01-27 22:01:07Z FloSoft $
+// $Id: main.h 7521 2011-09-08 20:45:55Z FloSoft $
 //
-// Copyright (c) 2005 - 2010 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -35,7 +35,7 @@
 	#define SEE_MASK_NOASYNC          0x00000100
 #endif
 	
-	int chdir(const char *p) { return (SetCurrentDirectory(p) == TRUE ? 0 : -1); }
+	int chdir(const char *p) { return (SetCurrentDirectoryA(p) == TRUE ? 0 : -1); }
 	int mkdir(const char *p, int unused) { return (CreateDirectoryA(p, NULL) == TRUE ? 0 : 1); }
 
 	#undef PlaySound
