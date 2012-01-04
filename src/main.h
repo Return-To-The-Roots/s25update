@@ -1,4 +1,4 @@
-// $Id: main.h 7521 2011-09-08 20:45:55Z FloSoft $
+// $Id: main.h 7747 2012-01-04 01:02:53Z marcus $
 //
 // Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -60,7 +60,6 @@
 #include <bzlib.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
 #include <curl/easy.h>
 
 #endif // MAIN_H_INCLUDED
