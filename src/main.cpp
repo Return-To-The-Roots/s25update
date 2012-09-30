@@ -1,4 +1,4 @@
-// $Id: main.cpp 7749 2012-01-04 02:47:26Z marcus $
+// $Id: main.cpp 8345 2012-09-30 12:54:57Z FloSoft $
 //
 // Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -186,7 +186,7 @@ static bool DownloadFile(string url, string &to, string path = "", string progre
 	curl_handle = curl_easy_init();
 
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
-	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "s25update/1.0");
+	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "s25update/1.1");
 	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
 	// Write file to Memory?
