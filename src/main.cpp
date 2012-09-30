@@ -1,4 +1,4 @@
-// $Id: main.cpp 8345 2012-09-30 12:54:57Z FloSoft $
+// $Id: main.cpp 8346 2012-09-30 13:35:46Z FloSoft $
 //
 // Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -183,6 +183,8 @@ static bool DownloadFile(string url, string &to, string path = "", string progre
 	FILE *tofp = NULL;
 	bool ok = true;
 
+	std::string npath = path + ".new";
+
 	curl_handle = curl_easy_init();
 
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
@@ -197,9 +199,12 @@ static bool DownloadFile(string url, string &to, string path = "", string progre
 	}
 	else
 	{
-		tofp = fopen(path.c_str(), "wb");
+		tofp = fopen(npath.c_str(), "wb");
 		if(!tofp)
+		{
 			cout << "Can't open file!!!!" << endl;
+			ok = false;
+		}
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void *>(tofp));
 	}
@@ -214,13 +219,16 @@ static bool DownloadFile(string url, string &to, string path = "", string progre
 
 	//curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
 	
-	if(curl_easy_perform(curl_handle) != 0)
+	if(ok && curl_easy_perform(curl_handle) != 0)
 		ok = false;
 	
 	curl_easy_cleanup(curl_handle);
 
 	if(tofp)
 		fclose(tofp);
+
+	if(ok)
+		rename(npath.c_str(), path.c_str());
 
 	return ok;
 }
