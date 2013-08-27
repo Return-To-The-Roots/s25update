@@ -1,4 +1,4 @@
-// $Id: main.cpp 8346 2012-09-30 13:35:46Z FloSoft $
+// $Id: main.cpp 8886 2013-08-27 17:23:35Z marcus $
 //
 // Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -124,7 +124,7 @@ static size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, string *
 	memcpy(cstr, ptr, realsize);
 	*data += cstr;
 	delete[] cstr;
-	
+
 	return realsize;
 }
 
@@ -218,10 +218,10 @@ static bool DownloadFile(string url, string &to, string path = "", string progre
 	}
 
 	//curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
-	
+
 	if(ok && curl_easy_perform(curl_handle) != 0)
 		ok = false;
-	
+
 	curl_easy_cleanup(curl_handle);
 
 	if(tofp)
@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
 		httpbase += NIGHTLYPATH;
 	else
 		httpbase += STABLEPATH;
-	
+
 	std::stringstream url;
 
 	// download filelist
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		cout << "Warning: Was not able to get current masterfile, trying older ones" << endl;
-		
+
 		bool ok = false;
 		for(int i = 0; i < 5; ++i)
 		{
@@ -394,12 +394,12 @@ int main(int argc, char *argv[])
 			if(DownloadFile(url.str(), filelist))
 			{
 				ok = true;
-				
+
 				// set base for later use
 				url.str("");
 				url << httpbase << TARGET << "." << ARCH << "." << i+1 << FILEPATH;
 				httpbase = url.str();
-				
+
 				break;
 			}
 			cout << "Warning: Was not able to get masterfile " << i+1 << ", trying older one" << endl;
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
-	
+
 	// httpbase now includes targetpath and filepath
 
 	// download linklist
@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
 		cout << "Warning: Was not able to get linkfile, ignoring" << endl;
 
 	stringstream flstream(filelist);
-	
+
 	// parse filelist
 	string line;
 	while( getline(flstream, line) )
@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
 		file = line.substr(34);
 
 		files.insert(pair<string,string>(hash,file));
-		
+
 		if(flstream.fail())
 			break;
 
@@ -461,7 +461,7 @@ int main(int argc, char *argv[])
 		string source = line.substr(0, line.rfind(' '));
 
 		links.insert(pair<string,string>(source,target));
-		
+
 		if(llstream.fail())
 			break;
 	}
@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
 		hash = it->first;
 		file = it->second;
 		++it;
-		
+
 		string tfile = file;
 #ifdef _WIN32
 		replace_all(tfile, '/', '\\');
@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
 
 			stringstream progress;
 			progress << "Updating \"" << /*setw(longestname) << */setiosflags(ios::left) << name << "\"";
-			
+
 			if(verbose)
 				progress << " to \"" << /*setw(longestpath) << */path << "\"";
 
@@ -559,7 +559,7 @@ int main(int argc, char *argv[])
 							unsigned int read = BZ2_bzRead ( &bzerror, bz2fp, buffer, 1024 );
 							if(fwrite(buffer, 1, read, fp) != read)
 								cout << "failed to write to disk";
-						
+
 						}
 						fclose(fp);
 
@@ -597,7 +597,7 @@ int main(int argc, char *argv[])
 #endif
 		++it;
 	}
-		
+
 #if defined _DEBUG && defined _MSC_VER
 	cout << "Press return to continue . . ." << flush;
 	cin.get();
