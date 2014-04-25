@@ -18,9 +18,9 @@ void md5(const uint8_t* buf, size_t len, uint8_t* digest);
 
 struct md5Context
 {
-  uint32_t buf[4];
-  uint64_t bytes;
-  uint32_t in[16];
+    uint32_t buf[4];
+    uint64_t bytes;
+    uint32_t in[16];
 };
 
 void md5Init(struct md5Context* context);

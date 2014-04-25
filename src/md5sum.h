@@ -1,4 +1,4 @@
-// $Id: md5sum.h 7521 2011-09-08 20:45:55Z FloSoft $
+// $Id: md5sum.h 9360 2014-04-25 15:45:29Z FloSoft $
 //
 // Copyright (c) 2005 - 2011 FloSoft (webmaster at flo-soft.de)
 //
@@ -17,7 +17,7 @@
 #ifndef MD5SUM_H
 #define MD5SUM_H
 
-int md5file(FILE *fp, std::string &digest);
+int md5file(FILE* fp, std::string& digest);
 
 #endif // !MD5SUM_H
 

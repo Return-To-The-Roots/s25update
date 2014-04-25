@@ -1,4 +1,4 @@
-// $Id: main.h 7747 2012-01-04 01:02:53Z marcus $
+// $Id: main.h 9360 2014-04-25 15:45:29Z FloSoft $
 //
 // Copyright (c) 2005 - 2011 Settlers Freaks (sf-team at siedler25.org)
 //
@@ -24,29 +24,29 @@
 #define _CRTDBG_MAP_ALLOC
 
 #ifdef _WIN32
-	#include <windows.h>
+#include <windows.h>
 #ifdef _MSC_VER
-	#include <crtdbg.h>
+#include <crtdbg.h>
 #else
-    #include <assert.h>
+#include <assert.h>
 #endif
 
 #ifndef SEE_MASK_NOASYNC
-	#define SEE_MASK_NOASYNC          0x00000100
+#define SEE_MASK_NOASYNC          0x00000100
 #endif
-	
-	int chdir(const char *p) { return (SetCurrentDirectoryA(p) == TRUE ? 0 : -1); }
-	int mkdir(const char *p, int unused) { return (CreateDirectoryA(p, NULL) == TRUE ? 0 : 1); }
 
-	#undef PlaySound
+int chdir(const char* p) { return (SetCurrentDirectoryA(p) == TRUE ? 0 : -1); }
+int mkdir(const char* p, int unused) { return (CreateDirectoryA(p, NULL) == TRUE ? 0 : 1); }
+
+#undef PlaySound
 #else
-	#include <sys/stat.h>
-	#include <unistd.h>
-	#include <cerrno>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cerrno>
 #endif // !_WIN32
 
 #if defined _WIN32 && defined _DEBUG
-	#include <crtdbg.h>
+#include <crtdbg.h>
 #endif // _WIN32 && _DEBUG
 
 #include <iostream>
