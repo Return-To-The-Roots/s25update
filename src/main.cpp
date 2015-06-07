@@ -174,6 +174,30 @@ static int ProgressBarCallback(string* data, double dltotal, double dlnow, doubl
 
 ///////////////////////////////////////////////////////////////////////////////
 /**
+ *  curl escape wrapper
+ *
+ *  @author FloSoft
+ */
+static std::string EscapeFile(const string& file)
+{
+    CURL* curl_handle;
+    std::string result;
+
+    curl_handle = curl_easy_init();
+    char *escaped = curl_easy_escape(curl_handle, file.c_str(), file.length());
+    if(escaped)
+    {
+        result = escaped;
+        curl_free(escaped);
+    }
+
+    curl_easy_cleanup(curl_handle);
+
+    return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/**
  *  httpdownload function (to string or to file, with or without progressbar)
  *
  *  @author FloSoft
@@ -504,7 +528,7 @@ int main(int argc, char* argv[])
                 progress << " ";
 
             url.str("");
-            url << httpbase + "/" +  bzfile;
+            url << httpbase + "/" + path + "/" + EscapeFile(name) + ".bz2";
             string fdata = "";
 
 #ifdef _WIN32
