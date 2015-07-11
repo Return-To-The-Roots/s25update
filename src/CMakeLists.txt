@@ -2,15 +2,9 @@
 ### $Id: CMakeLists.txt 7005 2011-01-27 22:01:07Z FloSoft $
 ################################################################################
 
-INCLUDE(FindCURL)
-IF (NOT CURL_FOUND)
-	MESSAGE(FATAL_ERROR "Curl not found")
-ENDIF (NOT CURL_FOUND)
+FIND_PACKAGE(CURL REQUIRED)
+FIND_PACKAGE(BZip2 REQUIRED)
 
-INCLUDE(FindBZip2)
-IF (NOT BZIP2_FOUND)
-	MESSAGE(FATAL_ERROR "BZip2 not found")
-ENDIF (NOT BZIP2_FOUND)
 ADD_DEFINITIONS(${BZIP2_DEFINITIONS})
 
 # bzip linkerbug-fix
