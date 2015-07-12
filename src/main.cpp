@@ -46,6 +46,10 @@ using namespace std;
 #   error You have to set ARCH to your architecture (i386/x86_64/ppc)
 #endif
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#endif
+
 #define HTTPHOST "http://nightly.siedler25.org/s25client/"
 #define STABLEPATH "stable/"
 #define NIGHTLYPATH "nightly/"
