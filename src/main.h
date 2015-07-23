@@ -24,6 +24,7 @@
 #define _CRTDBG_MAP_ALLOC
 
 #ifdef _WIN32
+#include <winsock2.h>
 #include <windows.h>
 #ifdef _MSC_VER
 #include <crtdbg.h>
