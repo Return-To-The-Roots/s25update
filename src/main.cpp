@@ -79,6 +79,9 @@ static short backslashrfix(short y)
 
     return csbi.dwCursorPosition.Y + y;
 }
+
+#else
+    #include <errno.h>
 #endif // !_WIN32
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -622,7 +625,8 @@ int main(int argc, char* argv[])
         CopyFileA(it->first.c_str(), target.c_str(), FALSE);
 #else
         cout << "creating symlink " << it->second << endl;
-        (void) symlink(it->second.c_str(), it->first.c_str());
+        if(!symlink(it->second.c_str(), it->first.c_str()) && errno != EEXIST)
+            cout << "Failed to create symlink: " << errno << endl;
 #endif
         ++it;
     }
