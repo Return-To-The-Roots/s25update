@@ -1,4 +1,4 @@
-// $Id: md5sum.h 9360 2014-04-25 15:45:29Z FloSoft $
+﻿// $Id: md5sum.h 9360 2014-04-25 15:45:29Z FloSoft $
 //
 // Copyright (c) 2005 - 2011 FloSoft (webmaster at flo-soft.de)
 //
