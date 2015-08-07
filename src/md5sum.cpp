@@ -1,4 +1,4 @@
-﻿/*
+/*
  * md5sum.c - Generate/check MD5 Message Digests
  *
  * Compile and link with md5.c.  If you don't have getopt() in your library

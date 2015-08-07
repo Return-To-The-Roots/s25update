@@ -1,4 +1,4 @@
-﻿/*
+/*
  * md5.h:  Header file for Colin Plumb's MD5 implementation.
  *         Modified by Ian Jackson so as not to use Colin Plumb's
  *         'usuals.h'.
