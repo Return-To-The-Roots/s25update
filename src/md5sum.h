@@ -1,6 +1,6 @@
 // $Id: md5sum.h 9360 2014-04-25 15:45:29Z FloSoft $
 //
-// Copyright (c) 2005 - 2011 FloSoft (webmaster at flo-soft.de)
+// Copyright (c) 2005 - 2015 FloSoft (webmaster at flo-soft.de)
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
