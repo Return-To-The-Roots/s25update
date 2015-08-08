@@ -47,7 +47,7 @@ int md5file(FILE* fp, std::string& digest)
 
     std::stringstream s;
     for (i = 0; i < 16; ++i)
-        s << std::hex << setiosflags(std::ios::fixed) << std::setfill('0') << std::setw(2) << static_cast<int>(d[i]);
+        s << std::hex << std::setiosflags(std::ios::fixed) << std::setfill('0') << std::setw(2) << static_cast<int>(d[i]);
 
     digest = s.str();
 
