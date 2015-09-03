@@ -7,7 +7,7 @@ ADD_DEFINITIONS(${BZIP2_DEFINITIONS})
 
 # bzip linkerbug-fix
 SET(SOURCES_BZIP "")
-IF ( "${COMPILEFOR}" STREQUAL "windows" )
+IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
 	IF( IS_DIRECTORY "${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3" )
 		SET(SOURCES_BZIP 
 			${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/blocksort.c
@@ -19,25 +19,25 @@ IF ( "${COMPILEFOR}" STREQUAL "windows" )
 		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/bzlib.c
 		   )
 	ENDIF( IS_DIRECTORY "${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3" )
-ENDIF ( "${COMPILEFOR}" STREQUAL "windows" )
+ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
 
 ################################################################################
 
 SET(s25update_SRCS main.cpp md5.cpp md5sum.cpp)
 
-IF ( "${COMPILEFOR}" STREQUAL "windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
+IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
 	ADD_DEFINITIONS("-DAFX_TARG_DEU")
 	ADD_DEFINITIONS("-D_WIN32_WCE")
 
-	IF ( "${COMPILEARCH}" STREQUAL "i386" )
+	IF ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" )
 		FIND_PROGRAM(WINDRES NAMES windres i686-pc-mingw32-windres i686-mingw32-windres i586-mingw32msvc-windres DOC "path to mingw's windres executable")
-	ELSE ( "${COMPILEARCH}" STREQUAL "i386" )
+	ELSE ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" )
 		FIND_PROGRAM(WINDRES NAMES windres x86_64-pc-mingw32-windres x86_64-mingw32-windres amd64-mingw32msvc-windres DOC "path to mingw's windres executable")
-	ENDIF ( "${COMPILEARCH}" STREQUAL "i386" )
+	ENDIF ( "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" )
 	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o COMMAND ${WINDRES} -I${CMAKE_CURRENT_SOURCE_DIR}/../win32/ -i${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc -o ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o)
 
 	SET(s25update_SRCS ${s25update_SRCS} s25update.res.o)
-ENDIF ( "${COMPILEFOR}" STREQUAL "windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
+ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
 
 IF (MSVC)
 	SET(s25update_RC "${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc")
@@ -48,14 +48,15 @@ ENDIF()
 
 ADD_EXECUTABLE(s25update ${s25update_SRCS} ${SOURCES_BZIP} ${s25update_RC})
 
-ADD_DEFINITIONS("-DTARGET=\"${COMPILEFOR}\"")
-ADD_DEFINITIONS("-DARCH=\"${COMPILEARCH}\"")
+STRING(TOLOWER ${CMAKE_SYSTEM_NAME} LOWER_SYSTEM_NAME)
+ADD_DEFINITIONS("-DTARGET=\"${LOWER_SYSTEM_NAME}\"")
+ADD_DEFINITIONS("-DARCH=\"${CMAKE_SYSTEM_PROCESSOR}\"")
 
 TARGET_LINK_LIBRARIES(s25update ${CURL_LIBRARIES} ${BZIP2_LIBRARIES})
 
-IF ( "${COMPILEFOR}" STREQUAL "windows" AND NOT MSVC)
+IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT MSVC)
 	ADD_CUSTOM_COMMAND(TARGET s25update POST_BUILD COMMAND if [ -f s25update.exe ] \; then cp -v s25update.exe s25update \; fi)
-ENDIF ( "${COMPILEFOR}" STREQUAL "windows" AND NOT MSVC)
+ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT MSVC)
 
 IF (NOT MSVC)
 	ADD_CUSTOM_COMMAND(TARGET s25update POST_BUILD COMMAND cp -v s25update ../../RTTR/)
