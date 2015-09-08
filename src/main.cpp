@@ -19,6 +19,17 @@
 // Header
 #include "main.h"
 #include "md5sum.h"
+#include <boost/filesystem.hpp>
+#include <curl/curl.h>
+#include <bzlib.h>
+#ifdef _WIN32
+#   include <windows.h>
+#   include <shellapi.h>
+#endif
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -45,7 +56,7 @@ using namespace std;
 #endif
 
 #ifdef _MSC_VER
-#define unlink _unlink
+#   define unlink _unlink
 #endif
 
 #define HTTPHOST "http://nightly.siedler25.org/s25client/"
@@ -54,6 +65,10 @@ using namespace std;
 #define FILEPATH "/updater"
 #define FILELIST "/files"
 #define LINKLIST "/links"
+
+#ifndef SEE_MASK_NOASYNC
+#   define SEE_MASK_NOASYNC          0x00000100
+#endif
 
 #ifdef _WIN32
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,30 +147,6 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
     delete[] cstr;
 
     return realsize;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/**
- *  create a directory-tree ( "mkdir -p" )
- *
- *  @author FloSoft
- */
-static bool CreateDirRecursive(string dir)
-{
-    string::size_type npos = 0;
-    while(npos != string::npos)
-    {
-        npos = dir.find('/', npos + 1);
-        string ndir = (npos == string::npos ? dir : dir.substr(0, npos));
-
-#ifdef _WIN32
-        replace_all(ndir, '/', '\\');
-#endif
-        mkdir(ndir.c_str(), 0755);
-
-        //cout << setw(npos) << "ndir: " << ndir << endl;
-    }
-    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -338,8 +329,10 @@ int main(int argc, char* argv[])
         }
     }
 
-    if(chdir(path.c_str()) < 0)
-        cerr << "Warning: Failed to set working directory: " << strerror(errno) << endl;
+    boost::system::error_code error;
+    boost::filesystem::current_path(path, error);
+    if(error)
+        cerr << "Warning: Failed to set working directory: " << error << endl;
 
 #ifdef _WIN32
     HANDLE hFile = CreateFileA("write.test", GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, NULL, NULL);
@@ -519,7 +512,7 @@ int main(int argc, char* argv[])
             string bzfile = file + ".bz2";
 
             // create path of file
-            CreateDirRecursive(path);
+            boost::filesystem::create_directories(path);
 
             stringstream progress;
             progress << "Updating \"" << /*setw(longestname) << */setiosflags(ios::left) << name << "\"";

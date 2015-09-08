@@ -19,46 +19,21 @@
 
 #pragma once
 
-#define _CRTDBG_MAP_ALLOC
-
 #ifdef _WIN32
-#include <winsock2.h>
-#include <windows.h>
-#ifdef _MSC_VER
-#include <crtdbg.h>
+#    define WIN32_LEAN_AND_MEAN
+#    ifdef _MSC_VER
+#        include <crtdbg.h>
+#        ifndef assert
+#            define assert _ASSERT
+#        endif
+#    else
+#        include <assert.h>
+#    endif
+#    ifdef _DEBUG
+#        include <crtdbg.h>
+#    endif // _WIN32 && _DEBUG
 #else
-#include <assert.h>
-#endif
-
-#ifndef SEE_MASK_NOASYNC
-#define SEE_MASK_NOASYNC          0x00000100
-#endif
-
-int chdir(const char* p) { return (SetCurrentDirectoryA(p) == TRUE ? 0 : -1); }
-int mkdir(const char* p, int unused) { return (CreateDirectoryA(p, NULL) == TRUE ? 0 : 1); }
-
-#undef PlaySound
-#else
-#include <sys/stat.h>
-#include <unistd.h>
-#include <cerrno>
+#    include <assert.h>
 #endif // !_WIN32
-
-#if defined _WIN32 && defined _DEBUG
-#include <crtdbg.h>
-#endif // _WIN32 && _DEBUG
-
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <map>
-
-#include <bzlib.h>
-
-#include <curl/curl.h>
-#include <curl/easy.h>
 
 #endif // MAIN_H_INCLUDED
