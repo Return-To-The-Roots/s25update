@@ -223,7 +223,7 @@ static bool DownloadFile(string url, string& to, string path = "", string progre
         tofp = fopen(npath.c_str(), "wb");
         if(!tofp)
         {
-            cout << "Can't open file!!!!" << endl;
+            cout << "Can't open file \"" << npath << "\"!!!!" << endl;
             ok = false;
         }
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -311,6 +311,7 @@ void print_last_error()
  */
 int main(int argc, char* argv[])
 {
+    bool updated = false;
     bool verbose = false;
     bool nightly = true;
     string path = argv[0];
@@ -329,6 +330,8 @@ int main(int argc, char* argv[])
         }
     }
 
+    if(verbose)
+        std::cout << "Using directory \"" << path << "\"" << std::endl;
     boost::system::error_code error;
     boost::filesystem::current_path(path, error);
     if(error)
@@ -383,12 +386,6 @@ int main(int argc, char* argv[])
     curl_global_init(CURL_GLOBAL_ALL);
     atexit(curl_global_cleanup);
 
-    string filelist, linklist;
-    string hash, file;
-    size_t longestname = 0, longestpath = 0;
-    map<string, string> files;
-    map<string, string> links;
-
     string httpbase = HTTPHOST;
     if(nightly)
         httpbase += NIGHTLYPATH;
@@ -399,6 +396,9 @@ int main(int argc, char* argv[])
 
     // download filelist
     url << httpbase << TARGET << "." << ARCH << FILEPATH << FILELIST;
+    if(verbose)
+        std::cout << "Requesting current version information from server..." << std::endl;
+    string filelist;
     if(DownloadFile(url.str(), filelist))
     {
         url.str("");
@@ -442,38 +442,34 @@ int main(int argc, char* argv[])
     // download linklist
     url.str("");
     url << httpbase << LINKLIST;
+    string linklist;
     if(!DownloadFile(url.str(), linklist))
-        cout << "Warning: Was not able to get linkfile, ignoring" << endl;
+        std::cerr << "Warning: Was not able to get linkfile, ignoring" << endl;
 
     stringstream flstream(filelist);
 
+    if(verbose)
+        std::cout << "Parsing update list..." << std::endl;
     // parse filelist
+    map<string, string> files;
     string line;
     while( getline(flstream, line) )
     {
         if(line.length() == 0)
             break;
 
-        hash = line.substr(0, 32);
-        file = line.substr(34);
+        std::string hash = line.substr(0, 32);
+        std::string file = line.substr(34);
 
         files.insert(pair<string, string>(hash, file));
 
         if(flstream.fail())
             break;
-
-        string name = file.substr(file.rfind('/') + 1);
-        string path = file.substr(0, file.rfind('/'));
-
-        // find longest name and path
-        if(name.length() > longestname)
-            longestname = name.length();
-        if(path.length() > longestpath)
-            longestpath = path.length();
     }
 
     stringstream llstream(linklist);
 
+    map<string, string> links;
     // parse linklist
     while( getline(llstream, line) )
     {
@@ -490,12 +486,10 @@ int main(int argc, char* argv[])
     }
 
     // check md5 of files and download them
-    map<string, string>::iterator it = files.begin();
-    while(it != files.end())
+    for(map<string, string>::iterator it = files.begin(); it != files.end(); ++it)
     {
-        hash = it->first;
-        file = it->second;
-        ++it;
+        string hash = it->first;
+        string file = it->second;
 
         string tfile = file;
 #ifdef _WIN32
@@ -505,111 +499,108 @@ int main(int argc, char* argv[])
         // check hash of file
         string nhash = md5sum(tfile);
         //cerr << hash << " - " << nhash << endl;
-        if(hash != nhash)
-        {
-            string name = file.substr(file.rfind('/') + 1);
-            string path = file.substr(0, file.rfind('/'));
-            string bzfile = file + ".bz2";
+        if(hash == nhash)
+            continue;
 
-            // create path of file
-            boost::filesystem::create_directories(path);
+        string name = file.substr(file.rfind('/') + 1);
+        string path = file.substr(0, file.rfind('/'));
+        string bzfile = file + ".bz2";
 
-            stringstream progress;
-            progress << "Updating \"" << /*setw(longestname) << */setiosflags(ios::left) << name << "\"";
+        // create path of file
+        boost::filesystem::create_directories(path);
 
-            if(verbose)
-                progress << " to \"" << /*setw(longestpath) << */path << "\"";
+        std::cout << "Updating \"" << setiosflags(ios::left) << name << "\"";
+        if(verbose)
+            std::cout << " to \"" << path << "\"";
+        std::cout << std::endl;
 
-            progress << ": ";
+        std::stringstream progress;
+        progress << "Downloading \"" << setiosflags(ios::left) << name << "\"";
+        while(50 - progress.str().size() > 0)
+            progress << " ";
 
-            while(65 - progress.str().size() > 0)
-                progress << " ";
-
-            url.str("");
-            url << httpbase + "/" + path + "/" + EscapeFile(name) + ".bz2";
-            string fdata = "";
+        url.str("");
+        url << httpbase << "/" << path << "/" << EscapeFile(name) << ".bz2";
+        string fdata = "";
 
 #ifdef _WIN32
-            replace_all(bzfile, '/', '\\');
+        replace_all(bzfile, '/', '\\');
 #endif
-            // download the file
-            DownloadFile(url.str(), fdata, bzfile, progress.str().c_str());
+        // download the file
+        DownloadFile(url.str(), fdata, bzfile, progress.str());
 
-            cout << " - ";
+        cout << " - ";
 
-            // extract the file
-            int bzerror = BZ_OK;
-            FILE* bzfp = fopen(bzfile.c_str(), "rb");
-            if(!bzfp)
+        // extract the file
+        int bzerror = BZ_OK;
+        FILE* bzfp = fopen(bzfile.c_str(), "rb");
+        if(!bzfp)
+        {
+            cerr << "decompression failed: download failure?" << endl;
+            return 1;
+        }
+
+        bzerror = BZ_OK;
+        BZFILE* bz2fp = BZ2_bzReadOpen( &bzerror, bzfp, 0, 0, NULL, 0);
+        if(!bz2fp)
+        {
+            cout << "decompression failed: compressed file corrupt?" << endl;
+            return 1;
+        }
+
+        FILE* fp = fopen(tfile.c_str(), "wb");
+#ifdef _WIN32
+        if(!fp)
+        {
+            // move file out of the way ...
+            if(!MoveFileExA(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
             {
-                cerr << "decompression failed: download failure?" << endl;
+                cout << "failed to move blocked file \"" << tfile << "\" out of the way ..." << endl;
                 return 1;
             }
-            else
-            {
-                bzerror = BZ_OK;
-                BZFILE* bz2fp = BZ2_bzReadOpen( &bzerror, bzfp, 0, 0, NULL, 0);
-                if(!bz2fp)
-                {
-                    cout << "decompression failed: compressed file corrupt?" << endl;
-                    return 1;
-                }
-                else
-                {
-                    FILE* fp = fopen(tfile.c_str(), "wb");
-#ifdef _WIN32
-                    if(!fp)
-                    {
-                        // move file out of the way ...
-                        if(!MoveFileExA(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
-                        {
-                            cout << "failed to move blocked file \"" << tfile << "\" out of the way ..." << endl;
-                            return 1;
-                        }
-                        fp = fopen(tfile.c_str(), "wb");
-                    }
-#endif
-                    if(!fp)
-                    {
-                        cout << "decompression failed: compressed data corrupt?" << endl;
-                        return 1;
-                    }
-                    else
-                    {
-                        while(bzerror == BZ_OK)
-                        {
-                            char buffer[1024];
-                            unsigned int read = BZ2_bzRead ( &bzerror, bz2fp, buffer, 1024 );
-                            if(fwrite(buffer, 1, read, fp) != read)
-                                cout << "failed to write to disk";
-
-                        }
-                        fclose(fp);
-
-                        cout << "ok";
-                    }
-
-                    BZ2_bzReadClose(&bzerror, bz2fp);
-                }
-                fclose(bzfp);
-
-                // remove compressed file
-                unlink(bzfile.c_str());
-            }
-
-            cout << endl;
-#ifdef _WIN32
-            // \r not working fix
-            backslashfix_y = backslashrfix(0);
-#endif // !_WIN32
+            fp = fopen(tfile.c_str(), "wb");
         }
+#endif
+        if(!fp)
+        {
+            cout << "decompression failed: compressed data corrupt?" << endl;
+            return 1;
+        }
+
+        while(bzerror == BZ_OK)
+        {
+            char buffer[1024];
+            unsigned int read = BZ2_bzRead ( &bzerror, bz2fp, buffer, 1024 );
+            if(fwrite(buffer, 1, read, fp) != read)
+                cout << "failed to write to disk";
+
+        }
+        fclose(fp);
+
+        cout << "ok";
+
+        BZ2_bzReadClose(&bzerror, bz2fp);
+        fclose(bzfp);
+
+        // remove compressed file
+        unlink(bzfile.c_str());
+
+        cout << endl;
+
+        updated = true;
+#ifdef _WIN32
+        // \r not working fix
+        backslashfix_y = backslashrfix(0);
+#endif // !_WIN32
     }
 
-    it = links.begin();
-    while(it != links.end())
+    if(verbose)
+        std::cout << "Updating folder structure..." << std::endl;
+
+    for(map<string, string>::iterator it = links.begin(); it != links.end(); ++it)
     {
 #ifdef _WIN32
-        //cout << "creating file " << it->second << endl;
+        cout << "Copying file " << it->second << endl;
         string path = it->first.substr(0, it->first.rfind('/') + 1);
         string target = path + it->second;
 
@@ -619,9 +610,10 @@ int main(int argc, char* argv[])
         if(!symlink(it->second.c_str(), it->first.c_str()) && errno != EEXIST)
             cout << "Failed to create symlink: " << errno << endl;
 #endif
-        ++it;
     }
 
+    if(updated)
+        std::cout << "Update finished!" << std::endl;
 #if defined _DEBUG && defined _MSC_VER
     cout << "Press return to continue . . ." << flush;
     cin.get();
