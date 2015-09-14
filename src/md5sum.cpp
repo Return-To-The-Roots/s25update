@@ -38,15 +38,15 @@ int md5file(FILE* fp, std::string& digest)
     unsigned char d[16];
     unsigned char buf[1024];
     md5Context ctx;
-    int n, i;
 
     md5Init(&ctx);
+    size_t n;
     while ((n = fread(buf, 1, sizeof(buf), fp)) > 0)
         md5Update(&ctx, buf, n);
     md5Final(&ctx, d);
 
     std::stringstream s;
-    for (i = 0; i < 16; ++i)
+    for (int i = 0; i < 16; ++i)
         s << std::hex << std::setiosflags(std::ios::fixed) << std::setfill('0') << std::setw(2) << static_cast<int>(d[i]);
 
     digest = s.str();

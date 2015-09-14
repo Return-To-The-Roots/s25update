@@ -101,7 +101,7 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
 void md5Final(struct md5Context* ctx, uint8_t digest[16])
 {
     // Number of bytes in ctx->in
-    int count = ctx->bytes & 0x3f;
+    size_t count = ctx->bytes & 0x3f;
     uint8_t* p = (uint8_t*)ctx->in + count;
 
     // Set the first char of padding to 0x80.  There is always room.

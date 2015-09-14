@@ -105,7 +105,7 @@ static short backslashrfix(short y)
  */
 string& replace_all(string& s, char a, char b)
 {
-    int idx;
+    size_t idx;
     char bb[2] = {b, '\0'};
     while( (idx = s.find_first_of(a)) >= 0 )
     {
@@ -198,7 +198,7 @@ static std::string EscapeFile(const string& file)
  *
  *  @author FloSoft
  */
-static bool DownloadFile(string url, string& to, string path = "", string progress = "")
+static bool DownloadFile(const string& url, string& to, const string& path = "", string progress = "")
 {
     CURL* curl_handle;
     FILE* tofp = NULL;
@@ -213,7 +213,7 @@ static bool DownloadFile(string url, string& to, string path = "", string progre
     curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
     // Write file to Memory?
-    if(path == "")
+    if(path.empty())
     {
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(&to));
@@ -231,7 +231,7 @@ static bool DownloadFile(string url, string& to, string path = "", string progre
     }
 
     // Show Progress?
-    if(progress != "")
+    if(!progress.empty())
     {
         curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
         curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);
@@ -260,7 +260,7 @@ static bool DownloadFile(string url, string& to, string path = "", string progre
  *
  *  @author FloSoft
  */
-string md5sum(string file)
+string md5sum(const string& file)
 {
     string digest = "";
 
@@ -516,7 +516,7 @@ int main(int argc, char* argv[])
 
         std::stringstream progress;
         progress << "Downloading \"" << setiosflags(ios::left) << name << "\"";
-        while(50 - progress.str().size() > 0)
+        while(progress.str().size() < 50)
             progress << " ";
 
         url.str("");
