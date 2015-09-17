@@ -314,8 +314,8 @@ int main(int argc, char* argv[])
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
-    string path = argv[0];
-    path = path.substr(0, path.find_last_of("/\\"));
+    boost::filesystem::path workPath = argv[0];
+    workPath = workPath.parent_path();
 
     if(argc > 1)
     {
@@ -324,16 +324,16 @@ int main(int argc, char* argv[])
             if(strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0 )
                 verbose = true;
             if(strcmp(argv[i], "--dir") == 0 || strcmp(argv[i], "-d") == 0 )
-                path = argv[++i];
+                workPath = argv[++i];
             if(strcmp(argv[i], "--stable") == 0 || strcmp(argv[i], "-s") == 0 )
                 nightly = false;
         }
     }
 
     if(verbose)
-        std::cout << "Using directory \"" << path << "\"" << std::endl;
+        std::cout << "Using directory " << workPath << std::endl;
     boost::system::error_code error;
-    boost::filesystem::current_path(path, error);
+    boost::filesystem::current_path(workPath, error);
     if(error)
         cerr << "Warning: Failed to set working directory: " << error << endl;
 
@@ -489,51 +489,45 @@ int main(int argc, char* argv[])
     for(map<string, string>::iterator it = files.begin(); it != files.end(); ++it)
     {
         string hash = it->first;
-        string file = it->second;
-
-        string tfile = file;
-#ifdef _WIN32
-        replace_all(tfile, '/', '\\');
-#endif
+        boost::filesystem::path filePath = it->second;
+        filePath.make_preferred();
 
         // check hash of file
-        string nhash = md5sum(tfile);
+        string nhash = md5sum(filePath.string());
         //cerr << hash << " - " << nhash << endl;
         if(hash == nhash)
             continue;
 
-        string name = file.substr(file.rfind('/') + 1);
-        string path = file.substr(0, file.rfind('/'));
-        string bzfile = file + ".bz2";
+        boost::filesystem::path name = filePath.filename();
+        boost::filesystem::path path = filePath.parent_path();
+        boost::filesystem::path bzfile = filePath;
+        bzfile += ".bz2";
 
         // create path of file
         boost::filesystem::create_directories(path);
 
-        std::cout << "Updating \"" << setiosflags(ios::left) << name << "\"";
+        std::cout << "Updating " << name;
         if(verbose)
             std::cout << " to \"" << path << "\"";
         std::cout << std::endl;
 
         std::stringstream progress;
-        progress << "Downloading \"" << setiosflags(ios::left) << name << "\"";
+        progress << "Downloading " << name;
         while(progress.str().size() < 50)
             progress << " ";
 
         url.str("");
-        url << httpbase << "/" << path << "/" << EscapeFile(name) << ".bz2";
+        url << httpbase << "/" << path.string() << "/" << EscapeFile(name.string()) << ".bz2";
         string fdata = "";
 
-#ifdef _WIN32
-        replace_all(bzfile, '/', '\\');
-#endif
         // download the file
-        DownloadFile(url.str(), fdata, bzfile, progress.str());
+        DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
 
         cout << " - ";
 
         // extract the file
         int bzerror = BZ_OK;
-        FILE* bzfp = fopen(bzfile.c_str(), "rb");
+        FILE* bzfp = fopen(bzfile.string().c_str(), "rb");
         if(!bzfp)
         {
             cerr << "decompression failed: download failure?" << endl;
@@ -548,19 +542,21 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        FILE* fp = fopen(tfile.c_str(), "wb");
-#ifdef _WIN32
+        FILE* fp = fopen(filePath.string().c_str(), "wb");
         if(!fp)
         {
+            boost::system::error_code error;
+            boost::filesystem::path bakFilePath(filePath);
+            bakFilePath += ".bak";
+            boost::filesystem::rename(filePath, bakFilePath, error);
             // move file out of the way ...
-            if(!MoveFileExA(tfile.c_str(), (tfile + ".bak").c_str(), MOVEFILE_REPLACE_EXISTING))
+            if(error)
             {
-                cout << "failed to move blocked file \"" << tfile << "\" out of the way ..." << endl;
+                cout << "failed to move blocked file \"" << filePath << "\" out of the way ..." << endl;
                 return 1;
             }
-            fp = fopen(tfile.c_str(), "wb");
+            fp = fopen(filePath.string().c_str(), "wb");
         }
-#endif
         if(!fp)
         {
             cout << "decompression failed: compressed data corrupt?" << endl;
@@ -583,7 +579,7 @@ int main(int argc, char* argv[])
         fclose(bzfp);
 
         // remove compressed file
-        unlink(bzfile.c_str());
+        unlink(bzfile.string().c_str());
 
         cout << endl;
 
@@ -601,10 +597,10 @@ int main(int argc, char* argv[])
     {
 #ifdef _WIN32
         cout << "Copying file " << it->second << endl;
-        string path = it->first.substr(0, it->first.rfind('/') + 1);
-        string target = path + it->second;
+        boost::filesystem::path path = boost::filesystem::path(it->first).parent_path();
+        boost::filesystem::path target = path / it->second;
 
-        CopyFileA(it->first.c_str(), target.c_str(), FALSE);
+        CopyFileA(it->first.c_str(), target.string().c_str(), FALSE);
 #else
         cout << "creating symlink " << it->second << endl;
         if(!symlink(it->second.c_str(), it->first.c_str()) && errno != EEXIST)
