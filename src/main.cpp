@@ -163,7 +163,10 @@ static int ProgressBarCallback(string* data, double dltotal, double dlnow, doubl
         backslashfix_y = backslashrfix(-1);
 #endif // !_WIN32
 
-    cout << "\r" << *data << setw(5) << setprecision(2) << setiosflags(ios:: fixed) << (dlnow * 100.0 / dltotal) << "%" << flush;
+    cout << "\r" << *data;
+    if(dltotal > 0) /* Avoid division by zero */
+        cout << setw(5) << setprecision(2) << setiosflags(ios:: fixed) << (dlnow * 100.0 / dltotal) << "%";
+    cout << flush;
 
     return 0;
 }
@@ -508,8 +511,8 @@ int main(int argc, char* argv[])
 
         std::cout << "Updating " << name;
         if(verbose)
-            std::cout << " to \"" << path << "\"";
-        std::cout << std::endl;
+            std::cout << " to " << path;
+        std::cout << std::endl << std::endl;
 
         std::stringstream progress;
         progress << "Downloading " << name;
@@ -517,13 +520,20 @@ int main(int argc, char* argv[])
             progress << " ";
 
         url.str("");
-        url << httpbase << "/" << path.string() << "/" << EscapeFile(name.string()) << ".bz2";
+        boost::filesystem::path urlPath = boost::filesystem::path(it->second).parent_path();
+        url << httpbase << "/" << urlPath.string() << "/" << EscapeFile(name.string()) << ".bz2";
         string fdata = "";
 
         // download the file
-        DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
+        bool dlOk = DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
 
         cout << " - ";
+        if(!dlOk)
+        {
+            cout << "failed!" << endl;
+            cerr << "Download of " << bzfile << "failed!" << endl;
+            return 1;
+        }
 
         // extract the file
         int bzerror = BZ_OK;
@@ -552,7 +562,7 @@ int main(int argc, char* argv[])
             // move file out of the way ...
             if(error)
             {
-                cout << "failed to move blocked file \"" << filePath << "\" out of the way ..." << endl;
+                cout << "failed to move blocked file " << filePath << " out of the way ..." << endl;
                 return 1;
             }
             fp = fopen(filePath.string().c_str(), "wb");
@@ -579,7 +589,7 @@ int main(int argc, char* argv[])
         fclose(bzfp);
 
         // remove compressed file
-        unlink(bzfile.string().c_str());
+        boost::filesystem::remove(bzfile);
 
         cout << endl;
 
