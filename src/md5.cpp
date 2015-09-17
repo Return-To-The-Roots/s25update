@@ -101,25 +101,26 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
 void md5Final(struct md5Context* ctx, uint8_t digest[16])
 {
     // Number of bytes in ctx->in
-    size_t count = ctx->bytes & 0x3f;
+    size_t count = ctx->bytes & 63;
     uint8_t* p = (uint8_t*)ctx->in + count;
 
     // Set the first char of padding to 0x80.  There is always room.
     *p++ = 0x80;
+    count++;
 
-    // Bytes of padding needed to make 56 bytes (-8..55)
-    count = 56 - 1 - count;
-
-    if (count < 0)
+    // Bytes of padding needed to make 56 bytes
+    size_t padding;
+    if (count > 56)
     {
         // Padding forces an extra block
-        memset(p, 0, count + 8);
+        memset(p, 0, 64 - count);
         byteSwap(ctx->in, 16);
         md5Transform(ctx->buf, ctx->in);
         p = (uint8_t*)ctx->in;
-        count = 56;
-    }
-    memset(p, 0, count);
+        padding = 56;
+    }else
+        padding = 56 - count;
+    memset(p, 0, padding);
     byteSwap(ctx->in, 14);
 
     // Append length in bits and transform

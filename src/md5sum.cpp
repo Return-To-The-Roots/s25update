@@ -35,6 +35,8 @@
  */
 int md5file(FILE* fp, std::string& digest)
 {
+    if(!fp)
+        return -1;
     unsigned char d[16];
     unsigned char buf[1024];
     md5Context ctx;
