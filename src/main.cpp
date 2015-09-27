@@ -99,23 +99,6 @@ static short backslashrfix(short y)
 
 ///////////////////////////////////////////////////////////////////////////////
 /**
- *  replace all 'a' in a string 's' with 'b's
- *
- *  @author FloSoft
- */
-string& replace_all(string& s, char a, char b)
-{
-    size_t idx;
-    char bb[2] = {b, '\0'};
-    while( (idx = s.find_first_of(a)) >= 0 )
-    {
-        s.replace( idx, 1, bb );
-    }
-    return s;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/**
  *  curl filewriter callback
  *
  *  @author FloSoft
