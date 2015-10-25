@@ -123,11 +123,8 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
 {
     size_t realsize = size * nmemb;
 
-    char* cstr = new char[realsize + 1];
-    memset(cstr, 0, realsize + 1);
-    memcpy(cstr, ptr, realsize);
-    *data += cstr;
-    delete[] cstr;
+    string tmp(reinterpret_cast<char*>(ptr), realsize);
+    *data += tmp;
 
     return realsize;
 }
