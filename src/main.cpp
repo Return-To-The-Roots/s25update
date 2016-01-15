@@ -163,7 +163,7 @@ static std::string EscapeFile(const string& file)
     std::string result;
 
     curl_handle = curl_easy_init();
-    char *escaped = curl_easy_escape(curl_handle, file.c_str(), file.length());
+    char *escaped = curl_easy_escape(curl_handle, file.c_str(), static_cast<int>(file.length()));
     if(escaped)
     {
         result = escaped;
