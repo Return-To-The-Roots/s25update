@@ -17,7 +17,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // Header
-#include "main.h"
+#include "main.h" // IWYU pragma: keep
 #include "md5sum.h"
 #include <boost/filesystem.hpp>
 #include <curl/curl.h>
