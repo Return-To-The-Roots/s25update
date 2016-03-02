@@ -152,7 +152,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
  */
 void md5Transform(uint32_t buf[4], const uint32_t in[16])
 {
-    register uint32_t a, b, c, d;
+    uint32_t a, b, c, d;
 
     a = buf[0];
     b = buf[1];
