@@ -135,7 +135,7 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
  *
  *  @author FloSoft
  */
-static int ProgressBarCallback(string* data, double dltotal, double dlnow, double ultotal, double ulnow)
+static int ProgressBarCallback(string* data, double dltotal, double dlnow, double  /*ultotal*/, double  /*ulnow*/)
 {
 #ifdef _WIN32
     // \r not working fix
