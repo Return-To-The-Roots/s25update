@@ -94,7 +94,7 @@ static short backslashrfix(short y)
 }
 
 #else
-    #include <errno.h>
+    #include <cerrno>
 #endif // !_WIN32
 
 ///////////////////////////////////////////////////////////////////////////////

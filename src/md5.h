@@ -9,7 +9,7 @@
 #ifndef MD5_H
 #define MD5_H
 
-#include <stddef.h>
+#include <cstddef>
 #include <stdint.h>
 
 #define MD5_DIGEST_LENGTH 16
