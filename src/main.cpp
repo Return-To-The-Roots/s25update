@@ -299,6 +299,20 @@ int main(int argc, char* argv[])
     bool nightly = true;
     boost::filesystem::path workPath = argv[0];
     workPath = workPath.parent_path();
+    // If the installation is the default one, update current installation
+#ifdef _WIN32
+    if(boost::filesystem::exists(workPath.parent_path() / "s25client.exe"))
+        workPath = workPath.parent_path();
+#elif defined(__APPLE__)
+    boost::filesystem::path tmpPath = workPath + "/../../../../../..";
+    if(boost::filesystem::exists(tmpPath / "s25client.app/Contents/MacOS/share/s25rttr/RTTR/s25update"))
+        workPath = tmpPath;
+#else
+    boost::filesystem::path tmpPath = workPath + "/../../..";
+    if(boost::filesystem::exists(tmpPath / "share/s25rttr/RTTR/s25update"))
+        workPath = tmpPath;
+#endif
+
 
     if(argc > 1)
     {
