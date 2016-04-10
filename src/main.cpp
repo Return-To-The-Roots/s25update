@@ -29,7 +29,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <map>
+#include <vector>
 
 using namespace std;
 
@@ -448,7 +448,7 @@ int main(int argc, char* argv[])
     if(verbose)
         std::cout << "Parsing update list..." << std::endl;
     // parse filelist
-    map<string, string> files;
+    vector<pair<string, string> > files;
     string line;
     while( getline(flstream, line) )
     {
@@ -458,7 +458,7 @@ int main(int argc, char* argv[])
         std::string hash = line.substr(0, 32);
         std::string file = line.substr(34);
 
-        files.insert(pair<string, string>(hash, file));
+        files.push_back(pair<string, string>(hash, file));
 
         if(flstream.fail())
             break;
@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
 
     stringstream llstream(linklist);
 
-    map<string, string> links;
+    vector<pair<string, string> > links;
     // parse linklist
     while( getline(llstream, line) )
     {
@@ -476,14 +476,14 @@ int main(int argc, char* argv[])
         string target = line.substr(line.find(' ') + 1);
         string source = line.substr(0, line.rfind(' '));
 
-        links.insert(pair<string, string>(source, target));
+        links.push_back(pair<string, string>(source, target));
 
         if(llstream.fail())
             break;
     }
 
     // check md5 of files and download them
-    for(map<string, string>::iterator it = files.begin(); it != files.end(); ++it)
+    for(vector<pair<string, string> >::iterator it = files.begin(); it != files.end(); ++it)
     {
         string hash = it->first;
         boost::filesystem::path filePath = it->second;
@@ -597,7 +597,7 @@ int main(int argc, char* argv[])
     if(verbose)
         std::cout << "Updating folder structure..." << std::endl;
 
-    for(map<string, string>::iterator it = links.begin(); it != links.end(); ++it)
+    for(vector<pair<string, string> >::iterator it = links.begin(); it != links.end(); ++it)
     {
 #ifdef _WIN32
         cout << "Copying file " << it->second << endl;
