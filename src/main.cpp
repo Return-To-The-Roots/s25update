@@ -69,7 +69,6 @@ using namespace std;
 #endif
 
 #ifdef _WIN32
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  \r fix-function for the stupid windows-console
  *  NOT THREADSAFE!!!
@@ -95,7 +94,6 @@ static short backslashrfix(short y)
     #include <cerrno>
 #endif // !_WIN32
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl filewriter callback
  *
@@ -111,7 +109,6 @@ static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl stringwriter callback
  *
@@ -127,7 +124,6 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
     return realsize;
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl progressbar callback
  *
@@ -149,7 +145,6 @@ static int ProgressBarCallback(string* data, double dltotal, double dlnow, doubl
     return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl escape wrapper
  *
@@ -173,7 +168,6 @@ static std::string EscapeFile(const string& file)
     return result;
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  httpdownload function (to string or to file, with or without progressbar)
  *
@@ -235,7 +229,6 @@ static bool DownloadFile(const string& url, string& to, const string& path = "",
     return ok;
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  calculate md5sum for a file
  *
@@ -255,7 +248,6 @@ string md5sum(const string& file)
 }
 
 #ifdef _WIN32
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  prints the last error (win only)
  *
@@ -284,7 +276,6 @@ void print_last_error()
 }
 #endif
 
-///////////////////////////////////////////////////////////////////////////////
 /**
  *  main function
  *
