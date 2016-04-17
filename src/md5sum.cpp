@@ -29,9 +29,6 @@
 #include "md5.h"
 #include "md5sum.h"
 
-/**
- *
- */
 int md5file(FILE* fp, std::string& digest)
 {
     if(!fp)

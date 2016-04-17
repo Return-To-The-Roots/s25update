@@ -72,8 +72,6 @@ using namespace std;
 /**
  *  \r fix-function for the stupid windows-console
  *  NOT THREADSAFE!!!
- *
- *  @author FloSoft
  */
 static short backslashfix_y;
 
@@ -96,8 +94,6 @@ static short backslashrfix(short y)
 
 /**
  *  curl filewriter callback
- *
- *  @author FloSoft
  */
 static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
@@ -111,8 +107,6 @@ static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
 
 /**
  *  curl stringwriter callback
- *
- *  @author FloSoft
  */
 static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* data)
 {
@@ -126,8 +120,6 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
 
 /**
  *  curl progressbar callback
- *
- *  @author FloSoft
  */
 static int ProgressBarCallback(string* data, double dltotal, double dlnow, double  /*ultotal*/, double  /*ulnow*/)
 {
@@ -147,8 +139,6 @@ static int ProgressBarCallback(string* data, double dltotal, double dlnow, doubl
 
 /**
  *  curl escape wrapper
- *
- *  @author FloSoft
  */
 static std::string EscapeFile(const string& file)
 {
@@ -170,8 +160,6 @@ static std::string EscapeFile(const string& file)
 
 /**
  *  httpdownload function (to string or to file, with or without progressbar)
- *
- *  @author FloSoft
  */
 static bool DownloadFile(const string& url, string& to, const string& path = "", string progress = "")
 {
@@ -231,8 +219,6 @@ static bool DownloadFile(const string& url, string& to, const string& path = "",
 
 /**
  *  calculate md5sum for a file
- *
- *  @author FloSoft
  */
 string md5sum(const string& file)
 {
@@ -250,8 +236,6 @@ string md5sum(const string& file)
 #ifdef _WIN32
 /**
  *  prints the last error (win only)
- *
- *  @author FloSoft
  */
 void print_last_error()
 {
@@ -278,8 +262,6 @@ void print_last_error()
 
 /**
  *  main function
- *
- *  @author FloSoft
  */
 int main(int argc, char* argv[])
 {
