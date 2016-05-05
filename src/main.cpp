@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
+///////////////////////////////////////////////////////////////////////////////
+// Header
 #include "main.h" // IWYU pragma: keep
 #include "md5sum.h"
 #include <boost/filesystem.hpp>
@@ -63,15 +65,19 @@ using namespace std;
 #define FILEPATH "/updater"
 #define FILELIST "/files"
 #define LINKLIST "/links"
+#define SAVEGAMEVERSION "/savegameversion"
 
 #ifndef SEE_MASK_NOASYNC
 #   define SEE_MASK_NOASYNC          0x00000100
 #endif
 
 #ifdef _WIN32
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  \r fix-function for the stupid windows-console
  *  NOT THREADSAFE!!!
+ *
+ *  @author FloSoft
  */
 static short backslashfix_y;
 
@@ -92,8 +98,11 @@ static short backslashrfix(short y)
     #include <cerrno>
 #endif // !_WIN32
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl filewriter callback
+ *
+ *  @author FloSoft
  */
 static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
@@ -105,8 +114,11 @@ static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
     return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl stringwriter callback
+ *
+ *  @author FloSoft
  */
 static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* data)
 {
@@ -118,8 +130,11 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, string* 
     return realsize;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl progressbar callback
+ *
+ *  @author FloSoft
  */
 static int ProgressBarCallback(string* data, double dltotal, double dlnow, double  /*ultotal*/, double  /*ulnow*/)
 {
@@ -137,8 +152,11 @@ static int ProgressBarCallback(string* data, double dltotal, double dlnow, doubl
     return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  curl escape wrapper
+ *
+ *  @author FloSoft
  */
 static std::string EscapeFile(const string& file)
 {
@@ -158,8 +176,11 @@ static std::string EscapeFile(const string& file)
     return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  httpdownload function (to string or to file, with or without progressbar)
+ *
+ *  @author FloSoft
  */
 static bool DownloadFile(const string& url, string& to, const string& path = "", string progress = "")
 {
@@ -217,8 +238,11 @@ static bool DownloadFile(const string& url, string& to, const string& path = "",
     return ok;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  calculate md5sum for a file
+ *
+ *  @author FloSoft
  */
 string md5sum(const string& file)
 {
@@ -234,8 +258,11 @@ string md5sum(const string& file)
 }
 
 #ifdef _WIN32
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  prints the last error (win only)
+ *
+ *  @author FloSoft
  */
 void print_last_error()
 {
@@ -260,8 +287,11 @@ void print_last_error()
 }
 #endif
 
+///////////////////////////////////////////////////////////////////////////////
 /**
  *  main function
+ *
+ *  @author FloSoft
  */
 int main(int argc, char* argv[])
 {
@@ -421,6 +451,8 @@ int main(int argc, char* argv[])
     // parse filelist
     vector<pair<string, string> > files;
     string line;
+    boost::filesystem::path savegameversion_filename;
+
     while( getline(flstream, line) )
     {
         if(line.length() == 0)
@@ -431,8 +463,52 @@ int main(int argc, char* argv[])
 
         files.push_back(pair<string, string>(hash, file));
 
+        if (file.find(SAVEGAMEVERSION) != string::npos)
+            savegameversion_filename = file;
+
         if(flstream.fail())
             break;
+    }
+
+    // check new savegame version before downloading
+    url.str("");
+    url << httpbase << SAVEGAMEVERSION;
+    string remote_savegameversion_content;
+    if (!DownloadFile(url.str(), remote_savegameversion_content))
+    {
+        cerr << "Error: Was not able to get remote savegame version, ignoring for now" << endl;
+        //return 1; // uncomment this if it actually works (to not break updater now)
+    }
+    else
+    {
+        std::ifstream local_savegame_version(savegameversion_filename.c_str());
+        stringstream remote_savegame_version(remote_savegameversion_content);
+        int local;
+        int remote;
+        if (local_savegame_version >> local && remote_savegame_version >> remote)
+        {
+            cout << "Savegame version of currently installed version: " << local << endl;
+            cout << "Savegame version of updated version: " << remote << endl;
+            if (local == remote)
+            {
+                cout << "You will be able to load your existing savegames." << endl;
+            }
+            else
+            {
+                cout << "Warning: You will not be able to load you existing savegames. " << endl;;
+                cout << "Cancel update? (y/n) ";
+                int input = cin.get();
+                if (static_cast<char>(input) == 'y')
+                {
+                    cout << endl << "Canceling update. Warning: You will not be able to play with players using a newer version." << endl;
+                    return 0;
+                }
+                else
+                {
+                    cout << endl << "Continuing update." << endl;
+                }
+            }
+        }
     }
 
     stringstream llstream(linklist);
