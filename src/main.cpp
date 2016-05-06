@@ -469,7 +469,7 @@ int main(int argc, char* argv[])
                 cout << "Warning: You will not be able to load you existing savegames. " << endl;;
                 cout << "Cancel update? (y/n) ";
                 int input = cin.get();
-                if (static_cast<char>(input) == 'y')
+                if (static_cast<char>(input) != 'n')
                 {
                     cout << endl << "Canceling update. Warning: You will not be able to play with players using a newer version." << endl;
                     return 0;
