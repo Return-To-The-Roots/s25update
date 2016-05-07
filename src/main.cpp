@@ -25,6 +25,7 @@
 #   include <shellapi.h>
 #endif
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <vector>
