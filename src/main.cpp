@@ -262,6 +262,51 @@ void print_last_error()
 }
 #endif
 
+// Checks the savegame version and return true if update can continue
+bool ValidateSavegameVersion(const std::string& httpbase, const std::string& savegameversionFilePath)
+{
+    // check new savegame version before downloading
+    string remote_savegameversion_content;
+    if(!DownloadFile(httpbase + SAVEGAMEVERSION, remote_savegameversion_content))
+    {
+        cerr << "Error: Was not able to get remote savegame version, ignoring for now" << endl;
+        return true;
+        //return false; // uncomment this if it actually works (to not break updater now)
+    }
+    std::ifstream local_savegame_version(savegameversionFilePath.c_str());
+    stringstream remote_savegame_version(remote_savegameversion_content);
+    int localVersion, remoteVersion;
+    if(!(local_savegame_version >> localVersion && remote_savegame_version >> remoteVersion))
+    {
+        local_savegame_version.seekg(0);
+        string curVersion;
+        local_savegame_version >> curVersion;
+        cerr << "Error: Could not parse savegame versions" << endl
+            << "Current: " << curVersion << endl
+            << "Update:  " << remote_savegameversion_content << endl;
+        return false;
+    }
+    cout << "Savegame version of currently installed version: " << localVersion << endl;
+    cout << "Savegame version of updated version: " << remoteVersion << endl;
+    if(localVersion == remoteVersion)
+    {
+        cout << "You will be able to load your existing savegames." << endl;
+        return true;
+    }
+    cout << "Warning: You will not be able to load your existing savegames. " << endl;;
+    cout << "Cancel update? (y/n) ";
+    char input = static_cast<char>(cin.get());
+    if(input != 'n' && input != 'N')
+    {
+        cout << endl << "Canceling update." << endl << "Warning: You will not be able to play with players using a newer version." << endl;
+        return false;
+    } else
+    {
+        cout << endl << "Continuing update." << endl;
+        return true;
+    }
+}
+
 /**
  *  main function
  */
@@ -423,7 +468,7 @@ int main(int argc, char* argv[])
     // parse filelist
     vector<pair<string, string> > files;
     string line;
-    boost::filesystem::path savegameversion_filename;
+    boost::filesystem::path savegameversionFilepath;
 
     while( getline(flstream, line) )
     {
@@ -436,51 +481,16 @@ int main(int argc, char* argv[])
         files.push_back(pair<string, string>(hash, file));
 
         if (file.find(SAVEGAMEVERSION) != string::npos)
-            savegameversion_filename = file;
+            savegameversionFilepath = file;
 
         if(flstream.fail())
             break;
     }
 
-    // check new savegame version before downloading
-    url.str("");
-    url << httpbase << SAVEGAMEVERSION;
-    string remote_savegameversion_content;
-    if (!DownloadFile(url.str(), remote_savegameversion_content))
+    if(!savegameversionFilepath.empty() && boost::filesystem::exists(savegameversionFilepath))
     {
-        cerr << "Error: Was not able to get remote savegame version, ignoring for now" << endl;
-        //return 1; // uncomment this if it actually works (to not break updater now)
-    }
-    else
-    {
-        std::ifstream local_savegame_version(savegameversion_filename.c_str());
-        stringstream remote_savegame_version(remote_savegameversion_content);
-        int local;
-        int remote;
-        if (local_savegame_version >> local && remote_savegame_version >> remote)
-        {
-            cout << "Savegame version of currently installed version: " << local << endl;
-            cout << "Savegame version of updated version: " << remote << endl;
-            if (local == remote)
-            {
-                cout << "You will be able to load your existing savegames." << endl;
-            }
-            else
-            {
-                cout << "Warning: You will not be able to load you existing savegames. " << endl;;
-                cout << "Cancel update? (y/n) ";
-                int input = cin.get();
-                if (static_cast<char>(input) != 'n')
-                {
-                    cout << endl << "Canceling update. Warning: You will not be able to play with players using a newer version." << endl;
-                    return 0;
-                }
-                else
-                {
-                    cout << endl << "Continuing update." << endl;
-                }
-            }
-        }
+        if(!ValidateSavegameVersion(httpbase, savegameversionFilepath.string()))
+            return 0;
     }
 
     stringstream llstream(linklist);
