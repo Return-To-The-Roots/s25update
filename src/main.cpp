@@ -284,16 +284,17 @@ bool ValidateSavegameVersion(const std::string& httpbase, const std::string& sav
         cerr << "Error: Could not parse savegame versions" << endl
             << "Current: " << curVersion << endl
             << "Update:  " << remote_savegameversion_content << endl;
-        return false;
-    }
-    cout << "Savegame version of currently installed version: " << localVersion << endl;
-    cout << "Savegame version of updated version: " << remoteVersion << endl;
-    if(localVersion == remoteVersion)
+    }else
     {
-        cout << "You will be able to load your existing savegames." << endl;
-        return true;
+        cout << "Savegame version of currently installed version: " << localVersion << endl;
+        cout << "Savegame version of updated version: " << remoteVersion << endl;
+        if(localVersion == remoteVersion)
+        {
+            cout << "You will be able to load your existing savegames." << endl;
+            return true;
+        }
+        cout << "Warning: You will not be able to load your existing savegames. " << endl;;
     }
-    cout << "Warning: You will not be able to load your existing savegames. " << endl;;
     cout << "Cancel update? (y/n) ";
     char input = static_cast<char>(cin.get());
     if(input != 'n' && input != 'N')
