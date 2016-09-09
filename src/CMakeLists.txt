@@ -61,6 +61,6 @@ IF (NOT MSVC)
 	ADD_CUSTOM_COMMAND(TARGET s25update POST_BUILD COMMAND cp -v $<TARGET_FILE:s25update> ../../RTTR/)
 ENDIF()
 
-INSTALL(TARGETS s25update RUNTIME DESTINATION ${RTTR_DATADIR}/RTTR/)
+INSTALL(TARGETS s25update RUNTIME DESTINATION ${RTTR_LIBDIR}/RTTR)
 
 ################################################################################
