@@ -26,7 +26,9 @@ ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
 
 ################################################################################
 
-SET(s25update_SRCS main.cpp md5.cpp md5sum.cpp)
+SET(s25update_SRCS s25update.cpp md5.cpp md5sum.cpp)
+source_group("Source Files" FILES ${s25update_SRCS})
+source_group("Header Files" FILES s25update.h)
 
 IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
 	ADD_DEFINITIONS("-DAFX_TARG_DEU")
