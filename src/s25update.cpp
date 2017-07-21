@@ -600,7 +600,7 @@ int main(int argc, char* argv[])
         while(bzerror == BZ_OK)
         {
             char buffer[1024];
-            unsigned int read = BZ2_bzRead ( &bzerror, bz2fp, buffer, 1024 );
+            unsigned read = BZ2_bzRead ( &bzerror, bz2fp, buffer, 1024 );
             if(fwrite(buffer, 1, read, fp) != read)
                 cout << "failed to write to disk";
 
