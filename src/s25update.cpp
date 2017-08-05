@@ -323,12 +323,12 @@ int main(int argc, char* argv[])
     if(boost::filesystem::exists(workPath.parent_path() / string("s25client.exe")))
         workPath = workPath.parent_path();
 #elif defined(__APPLE__)
-    boost::filesystem::path tmpPath = workPath / string("../../../../../..");
-    if(boost::filesystem::exists(tmpPath / string("s25client.app/Contents/MacOS/share/s25rttr/RTTR/s25update")))
+    boost::filesystem::path tmpPath = workPath / string("../../../..");
+    if(boost::filesystem::exists(tmpPath / string("s25client.app/Contents/MacOS/bin/RTTR/s25update")))
         workPath = tmpPath;
 #else
-    boost::filesystem::path tmpPath = workPath / string("../../..");
-    if(boost::filesystem::exists(tmpPath / string("share/s25rttr/RTTR/s25update")))
+    boost::filesystem::path tmpPath = workPath / string("..");
+    if(boost::filesystem::exists(tmpPath / string("bin/RTTR/s25update")))
         workPath = tmpPath;
 #endif
 
