@@ -36,7 +36,7 @@ void md5(const uint8_t* buf, size_t len, uint8_t* digest)
  */
 void byteSwap(uint32_t* buf, unsigned words)
 {
-    for ( ; words > 0; --words)
+    for(; words > 0; --words)
     {
         uint8_t* p = (uint8_t*)buf;
         *buf++ = (uint32_t)p[3] << 24 | (uint32_t)p[2] << 16 | (uint32_t)p[1] << 8 | p[0];
@@ -68,7 +68,7 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
     // Update byte count
     ctx->bytes += len;
 
-    if (t > len)
+    if(t > len)
     {
         memcpy((uint8_t*)ctx->in + 64 - t, buf, len);
         return;
@@ -82,7 +82,7 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
     len -= t;
 
     // Process data in 64-byte chunks
-    for ( ; len >= 64; len -= 64)
+    for(; len >= 64; len -= 64)
     {
         memcpy(ctx->in, buf, 64);
         byteSwap(ctx->in, 16);
@@ -110,7 +110,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
 
     // Bytes of padding needed to make 56 bytes
     size_t padding;
-    if (count > 56)
+    if(count > 56)
     {
         // Padding forces an extra block
         memset(p, 0, 64 - count);
@@ -118,13 +118,13 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
         md5Transform(ctx->buf, ctx->in);
         p = (uint8_t*)ctx->in;
         padding = 56;
-    }else
+    } else
         padding = 56 - count;
     memset(p, 0, padding);
     byteSwap(ctx->in, 14);
 
     // Append length in bits and transform
-    ctx->in[14] = (ctx->bytes <<  3) & 0xFFFFFFFF;
+    ctx->in[14] = (ctx->bytes << 3) & 0xFFFFFFFF;
     ctx->in[15] = (ctx->bytes >> 29) & 0xFFFFFFFF;
     md5Transform(ctx->buf, ctx->in);
 
@@ -142,8 +142,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
 #define F4(x, y, z) (y ^ (x | ~z))
 
 // This is the central step in the MD5 algorithm.
-#define MD5STEP(f,w,x,y,z,in,s) \
-         (w += f(x,y,z) + in, w = (w<<s | w>>(32-s)) + x)
+#define MD5STEP(f, w, x, y, z, in, s) (w += f(x, y, z) + in, w = (w << s | w >> (32 - s)) + x)
 
 /*
  * The core of the MD5 algorithm, this alters an existing MD5 hash to
@@ -232,4 +231,3 @@ void md5Transform(uint32_t buf[4], const uint32_t in[16])
     buf[2] += c;
     buf[3] += d;
 }
-

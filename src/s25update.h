@@ -20,20 +20,20 @@
 #pragma once
 
 #ifdef _WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    ifdef _MSC_VER
-#        include <crtdbg.h>
-#        ifndef assert
-#            define assert _ASSERT
-#        endif
-#    else
-#        include <assert.h>
-#    endif
-#    ifdef _DEBUG
-#        include <crtdbg.h>
-#    endif // _WIN32 && _DEBUG
+#define WIN32_LEAN_AND_MEAN
+#ifdef _MSC_VER
+#include <crtdbg.h>
+#ifndef assert
+#define assert _ASSERT
+#endif
 #else
-#    include <cassert>
+#include <assert.h>
+#endif
+#ifdef _DEBUG
+#include <crtdbg.h>
+#endif // _WIN32 && _DEBUG
+#else
+#include <cassert>
 #endif // !_WIN32
 
 #endif // S25UPDATE_H__

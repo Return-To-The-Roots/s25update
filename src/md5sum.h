@@ -15,10 +15,9 @@
 #ifndef MD5SUM_H
 #define MD5SUM_H
 
-#include <string>
 #include <cstdio>
+#include <string>
 
 int md5file(FILE* fp, std::string& digest);
 
 #endif // !MD5SUM_H
-

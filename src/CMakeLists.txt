@@ -27,8 +27,12 @@ ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
 ################################################################################
 
 SET(s25update_SRCS s25update.cpp md5.cpp md5sum.cpp)
+SET(s25update_HEADERS s25update.h md5.h md5sum.h)
 source_group("Source Files" FILES ${s25update_SRCS})
-source_group("Header Files" FILES s25update.h)
+source_group("Header Files" FILES ${s25update_HEADERS})
+if(ClangFormat_FOUND)
+    add_ClangFormat_files(${s25update_SRCS} ${s25update_HEADERS})
+endif()
 
 IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
 	ADD_DEFINITIONS("-DAFX_TARG_DEU")

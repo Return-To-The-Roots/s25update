@@ -22,8 +22,8 @@
  */
 #include <cstdio>
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 #include <string>
 
 #include "md5.h"
@@ -39,18 +39,17 @@ int md5file(FILE* fp, std::string& digest)
 
     md5Init(&ctx);
     size_t n;
-    while ((n = fread(buf, 1, sizeof(buf), fp)) > 0)
+    while((n = fread(buf, 1, sizeof(buf), fp)) > 0)
         md5Update(&ctx, buf, n);
     md5Final(&ctx, d);
 
     std::stringstream s;
-    for (int i = 0; i < 16; ++i)
+    for(int i = 0; i < 16; ++i)
         s << std::hex << std::setiosflags(std::ios::fixed) << std::setfill('0') << std::setw(2) << static_cast<int>(d[i]);
 
     digest = s.str();
 
-    if (ferror(fp))
+    if(ferror(fp))
         return -1;
     return 0;
 }
-
