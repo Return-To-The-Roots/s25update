@@ -2,27 +2,11 @@ FIND_PACKAGE(CURL REQUIRED)
 FIND_PACKAGE(BZip2 REQUIRED)
 FIND_PACKAGE(Boost 1.55 COMPONENTS system filesystem REQUIRED)
 
-INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR}
+INCLUDE_DIRECTORIES(SYSTEM
+                    ${CURL_INCLUDE_DIR}
                     ${BZIP2_INCLUDE_DIR}
                     ${Boost_INCLUDE_DIR}
                     )
-ADD_DEFINITIONS(${BZIP2_DEFINITIONS})
-
-# bzip linkerbug-fix
-SET(SOURCES_BZIP "")
-IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
-	IF( IS_DIRECTORY "${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3" )
-		SET(SOURCES_BZIP 
-			${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/blocksort.c
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/huffman.c 
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/crctable.c
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/randtable.c 
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/compress.c
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/decompress.c 
-		    ${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3/bzlib.c
-		   )
-	ENDIF( IS_DIRECTORY "${CMAKE_SOURCE_DIR}/contrib/bzip2-1.0.3" )
-ENDIF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
 
 ################################################################################
 
@@ -34,7 +18,7 @@ if(ClangFormat_FOUND)
     add_ClangFormat_files(${s25update_SRCS} ${s25update_HEADERS})
 endif()
 
-IF ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" AND NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Windows")
+IF (WIN32 AND NOT CMAKE_HOST_WIN32)
 	ADD_DEFINITIONS("-DAFX_TARG_DEU")
 	ADD_DEFINITIONS("-D_WIN32_WCE")
 
@@ -55,7 +39,7 @@ ADD_DEFINITIONS("-DTARGET=\"${LOWER_SYSTEM_NAME}\"")
 ADD_DEFINITIONS("-DARCH=\"${PLATFORM_ARCH}\"")
 
 ADD_EXECUTABLE(s25update ${s25update_SRCS} ${SOURCES_BZIP} ${s25update_RC})
-TARGET_LINK_LIBRARIES(s25update ${CURL_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(s25update ${CURL_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} nowide-static)
 
 IF (NOT MSVC)
 	ADD_CUSTOM_COMMAND(TARGET s25update POST_BUILD COMMAND cp -v $<TARGET_FILE:s25update> "${CMAKE_BINARY_DIR}/${RTTR_BINDIR}/RTTR/")

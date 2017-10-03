@@ -18,20 +18,20 @@
 #include "s25update.h" // IWYU pragma: keep
 #include "md5sum.h"
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <bzlib.h>
 #include <curl/curl.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
 #endif
-#include <fstream>
+#include <boost/nowide/fstream.hpp>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
 namespace bfs = boost::filesystem;
+namespace bnw = boost::nowide;
 
 #ifndef TARGET
 #ifdef _WIN32
@@ -259,7 +259,7 @@ bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& saveg
         return true;
         // return false; // uncomment this if it actually works (to not break updater now)
     }
-    bfs::ifstream local_savegame_version(savegameversionFilePath);
+    bnw::ifstream local_savegame_version(savegameversionFilePath);
     std::stringstream remote_savegame_version(remote_savegameversion_content);
     int localVersion, remoteVersion;
     if(!(local_savegame_version >> localVersion && remote_savegame_version >> remoteVersion))
