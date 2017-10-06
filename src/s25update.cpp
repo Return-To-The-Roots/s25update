@@ -81,7 +81,9 @@ static short backslashrfix(short y)
     hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     GetConsoleScreenBufferInfo(hConsoleOutput, &csbi);
 
-    COORD Cursor_an_Pos = {0, csbi.dwCursorPosition.Y + y};
+    COORD Cursor_an_Pos;
+    Cursor_an_Pos.X = 0;
+    Cursor_an_Pos.Y = csbi.dwCursorPosition.Y + y;
     SetConsoleCursorPosition(hConsoleOutput, Cursor_an_Pos);
 
     return csbi.dwCursorPosition.Y + y;
@@ -342,7 +344,7 @@ int main(int argc, char* argv[])
         std::cerr << "Warning: Failed to set working directory: " << error << std::endl;
 
 #ifdef _WIN32
-    HANDLE hFile = CreateFileW(L"write.test", GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, NULL, NULL);
+    HANDLE hFile = CreateFileW(L"write.test", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
     if(hFile == INVALID_HANDLE_VALUE)
     {
         if(GetLastError() != ERROR_ACCESS_DENIED)
