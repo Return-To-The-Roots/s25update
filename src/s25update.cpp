@@ -307,18 +307,17 @@ int main(int argc, char* argv[])
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
-    bfs::path workPath = argv[0];
-    workPath = workPath.parent_path();
+    bfs::path workPath = bfs::path(argv[0]).parent_path();
 // If the installation is the default one, update current installation
 #ifdef _WIN32
     if(bfs::exists(workPath.parent_path() / std::string("s25client.exe")))
         workPath = workPath.parent_path();
 #elif defined(__APPLE__)
-    bfs::path tmpPath = workPath / std::string("../../../..");
+    bfs::path tmpPath = workPath.parent_path().parent_path().parent_path().parent_path();
     if(bfs::exists(tmpPath / std::string("s25client.app/Contents/MacOS/bin/RTTR/s25update")))
         workPath = tmpPath;
 #else
-    bfs::path tmpPath = workPath / std::string("..");
+    bfs::path tmpPath = workPath.parent_path();
     if(bfs::exists(tmpPath / std::string("bin/RTTR/s25update")))
         workPath = tmpPath;
 #endif
