@@ -18,17 +18,18 @@
 #include "s25update.h" // IWYU pragma: keep
 #include "md5sum.h"
 #include <boost/filesystem.hpp>
+#include <boost/nowide/cstdio.hpp>
+#include <boost/nowide/fstream.hpp>
 #include <bzlib.h>
 #include <curl/curl.h>
-#ifdef _WIN32
-#include <windows.h>
-#include <shellapi.h>
-#endif
-#include <boost/nowide/fstream.hpp>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <vector>
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 namespace bfs = boost::filesystem;
 namespace bnw = boost::nowide;
@@ -181,7 +182,7 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(&to));
     } else
     {
-        tofp = fopen(npath.c_str(), "wb");
+        tofp = boost::nowide::fopen(npath.c_str(), "wb");
         if(!tofp)
         {
             std::cout << "Can't open file \"" << npath << "\"!!!!" << std::endl;
@@ -222,7 +223,7 @@ std::string md5sum(const std::string& file)
 {
     std::string digest = "";
 
-    FILE* fp = fopen(file.c_str(), "rb");
+    FILE* fp = boost::nowide::fopen(file.c_str(), "rb");
     if(fp)
     {
         md5file(fp, digest);
@@ -547,7 +548,7 @@ int main(int argc, char* argv[])
 
         // extract the file
         int bzerror = BZ_OK;
-        FILE* bzfp = fopen(bzfile.string().c_str(), "rb");
+        FILE* bzfp = boost::nowide::fopen(bzfile.string().c_str(), "rb");
         if(!bzfp)
         {
             std::cerr << "decompression failed: download failure?" << std::endl;
@@ -562,7 +563,7 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        FILE* fp = fopen(filePath.string().c_str(), "wb");
+        FILE* fp = boost::nowide::fopen(filePath.string().c_str(), "wb");
         if(!fp)
         {
             boost::system::error_code error;
@@ -575,7 +576,7 @@ int main(int argc, char* argv[])
                 std::cout << "failed to move blocked file " << filePath << " out of the way ..." << std::endl;
                 return 1;
             }
-            fp = fopen(filePath.string().c_str(), "wb");
+            fp = boost::nowide::fopen(filePath.string().c_str(), "wb");
         }
         if(!fp)
         {
