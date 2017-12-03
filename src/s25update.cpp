@@ -615,22 +615,23 @@ int main(int argc, char* argv[])
 
     for(std::vector<std::pair<std::string, std::string> >::iterator it = links.begin(); it != links.end(); ++it)
     {
+        // Note: Symlink = it->first pointing to it->second (it->second) exists
 #ifdef _WIN32
         std::cout << "Copying file " << it->second << std::endl;
         bfs::path path = bfs::path(it->first).parent_path();
-        bfs::path target = path / it->second;
+        bfs::path srcFilepath = path / it->second;
         boost::system::error_code ec;
-        bfs::copy_file(it->first, target, bfs::copy_option::overwrite_if_exists, ec);
+        bfs::copy_file(srcFilepath, it->first, bfs::copy_option::overwrite_if_exists, ec);
         if(ec)
-            std::cerr << "Failed to copy file '" << it->first << "' to '" << target << "': " << ec << std::endl;
+            std::cerr << "Failed to copy file '" << srcFilepath << "' to '" << it->first << "': " << ec.message() << std::endl;
 #else
-        std::cout << "creating symlink " << it->second << std::endl;
-        if(!bfs::exists(it->second))
+        std::cout << "creating symlink " << it->first << std::endl;
+        if(!bfs::exists(it->first))
         {
             boost::system::error_code ec;
-            bfs::create_symlink(it->first, it->second, ec);
+            bfs::create_symlink(it->second, it->first, ec);
             if(ec)
-                std::cout << "Failed to create symlink: '" << it->first << "' to '" << it->second << "': " << ec << std::endl;
+                std::cout << "Failed to create symlink: '" << it->first << "' to '" << it->second << "': " << ec.message() << std::endl;
         }
 #endif
     }
