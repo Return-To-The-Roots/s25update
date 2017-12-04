@@ -615,7 +615,7 @@ int main(int argc, char* argv[])
 
     for(std::vector<std::pair<std::string, std::string> >::iterator it = links.begin(); it != links.end(); ++it)
     {
-        // Note: Symlink = it->first pointing to it->second (it->second) exists
+    // Note: Symlink = it->first pointing to it->second (it->second) exists
 #ifdef _WIN32
         std::cout << "Copying file " << it->second << std::endl;
         bfs::path path = bfs::path(it->first).parent_path();
