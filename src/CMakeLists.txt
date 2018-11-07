@@ -42,5 +42,7 @@ rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})
 
 ADD_EXECUTABLE(s25update ${s25update_SRCS} ${SOURCES_BZIP} ${s25update_RC})
 TARGET_LINK_LIBRARIES(s25update ${CURL_LIBRARIES} ${BZIP2_LIBRARIES} ${Boost_LIBRARIES} nowide-static)
+# Disable automatic boost linking
+target_compile_definitions(s25update PUBLIC -DBOOST_ALL_NO_LIB)
 
 INSTALL(TARGETS s25update RUNTIME DESTINATION ${RTTR_EXTRA_BINDIR})
