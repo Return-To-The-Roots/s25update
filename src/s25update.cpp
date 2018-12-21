@@ -239,10 +239,10 @@ std::string md5sum(const std::string& file)
 std::string get_last_error_string()
 {
     LPVOID lpMsgBuf;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(),
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(),
                   0, // Default language
-                  (LPTSTR)&lpMsgBuf, 0, NULL);
-    std::string result = (LPCTSTR)lpMsgBuf;
+                  (LPSTR)&lpMsgBuf, 0, NULL);
+    std::string result = (LPCSTR)lpMsgBuf;
     // Free the buffer.
     LocalFree(lpMsgBuf);
     return result;
