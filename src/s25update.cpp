@@ -20,10 +20,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/nowide/fstream.hpp>
+#include <boost/nowide/iostream.hpp>
 #include <bzlib.h>
 #include <curl/curl.h>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <vector>
 #ifdef _WIN32
@@ -129,10 +129,10 @@ static int ProgressBarCallback(std::string* data, double dltotal, double dlnow, 
         backslashfix_y = backslashrfix(-1);
 #endif // !_WIN32
 
-    std::cout << "\r" << *data;
+    bnw::cout << "\r" << *data;
     if(dltotal > 0) /* Avoid division by zero */
-        std::cout << std::setw(5) << std::setprecision(2) << std::setiosflags(std::ios::fixed) << (dlnow * 100.0 / dltotal) << "%";
-    std::cout << std::flush;
+        bnw::cout << std::setw(5) << std::setprecision(2) << std::setiosflags(std::ios::fixed) << (dlnow * 100.0 / dltotal) << "%";
+    bnw::cout << std::flush;
 
     return 0;
 }
@@ -185,7 +185,7 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
         tofp = boost::nowide::fopen(npath.c_str(), "wb");
         if(!tofp)
         {
-            std::cout << "Can't open file \"" << npath << "\"!!!!" << std::endl;
+            bnw::cerr << "Can't open file \"" << npath << "\"!!!!" << std::endl;
             ok = false;
         }
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -234,20 +234,18 @@ std::string md5sum(const std::string& file)
 
 #ifdef _WIN32
 /**
- *  prints the last error (win only)
+ *  get the last error (win only)
  */
-void print_last_error()
+std::string get_last_error_string()
 {
     LPVOID lpMsgBuf;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(),
                   0, // Default language
                   (LPTSTR)&lpMsgBuf, 0, NULL);
-    // Process any inserts in lpMsgBuf.
-    // ...
-    // Display the std::string.
-    std::cerr << (LPCTSTR)lpMsgBuf << std::endl;
+    std::string result = (LPCTSTR)lpMsgBuf;
     // Free the buffer.
     LocalFree(lpMsgBuf);
+    return result;
 }
 #endif
 
@@ -258,7 +256,7 @@ bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& saveg
     std::string remote_savegameversion_content;
     if(!DownloadFile(httpbase + SAVEGAMEVERSION, remote_savegameversion_content))
     {
-        std::cerr << "Error: Was not able to get remote savegame version, ignoring for now" << std::endl;
+        bnw::cerr << "Error: Was not able to get remote savegame version, ignoring for now" << std::endl;
         return true;
         // return false; // uncomment this if it actually works (to not break updater now)
     }
@@ -270,45 +268,99 @@ bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& saveg
         local_savegame_version.seekg(0);
         std::string curVersion;
         local_savegame_version >> curVersion;
-        std::cerr << "Error: Could not parse savegame versions" << std::endl
+        bnw::cerr << "Error: Could not parse savegame versions" << std::endl
                   << "Current: " << curVersion << std::endl
                   << "Update:  " << remote_savegameversion_content << std::endl;
     } else
     {
-        std::cout << "Savegame version of currently installed version: " << localVersion << std::endl;
-        std::cout << "Savegame version of updated version: " << remoteVersion << std::endl;
+        bnw::cout << "Savegame version of currently installed version: " << localVersion << std::endl;
+        bnw::cout << "Savegame version of updated version: " << remoteVersion << std::endl;
         if(localVersion == remoteVersion)
         {
-            std::cout << "You will be able to load your existing savegames." << std::endl;
+            bnw::cout << "You will be able to load your existing savegames." << std::endl;
             return true;
         }
-        std::cout << "Warning: You will not be able to load your existing savegames. " << std::endl;
+        bnw::cout << "Warning: You will not be able to load your existing savegames. " << std::endl;
     }
-    std::cout << "Cancel update? (y/n) ";
+    bnw::cout << "Cancel update? (y/n) ";
     char input = static_cast<char>(std::cin.get());
     if(input != 'n' && input != 'N')
     {
-        std::cout << std::endl
+        bnw::cout << std::endl
                   << "Canceling update." << std::endl
                   << "Warning: You will not be able to play with players using a newer version." << std::endl;
         return false;
     } else
     {
-        std::cout << std::endl << "Continuing update." << std::endl;
+        bnw::cout << std::endl << "Continuing update." << std::endl;
         return true;
     }
 }
 
-/**
- *  main function
- */
-int main(int argc, char* argv[])
+bool isCurrentDirWritable()
+{
+#ifdef _WIN32
+    HANDLE hFile = CreateFileW(L"write.test", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+    if(hFile == INVALID_HANDLE_VALUE)
+    {
+        if(GetLastError() != ERROR_ACCESS_DENIED)
+            throw std::runtime_error(get_last_error_string());
+        return false;
+
+        bnw::cout << "Cannot write to update directory, trying to elevate to administrator" << std::endl;
+
+        bnw::cout << "Update should have been run successfully" << std::endl;
+        return 0;
+    } else
+    {
+        CloseHandle(hFile);
+        DeleteFileW(L"write.test");
+        return true;
+    }
+#else
+    bnw::ofstream testFile("write.test", bnw::ofstream::trunc);
+    if(testFile)
+    {
+        testFile.close();
+        bfs::remove("write.test");
+        return true;
+    } else
+        return false;
+#endif
+}
+
+bool runAsAdmin(int argc, char* argv[])
+{
+#ifdef _WIN32
+    std::stringstream arguments;
+    for(int i = 1; i < argc; ++i)
+        arguments << argv[i];
+
+    // Launch itself as administrator.
+    SHELLEXECUTEINFOA sei = {sizeof(sei)};
+    sei.lpVerb = "runas";
+    sei.lpFile = argv[0];
+    sei.hwnd = GetConsoleWindow();
+    sei.lpParameters = arguments.str().c_str();
+    sei.nShow = SW_NORMAL;
+    sei.fMask = SEE_MASK_NOASYNC;
+
+    if(ShellExecuteExA(&sei))
+        return true;
+    DWORD dwError = GetLastError();
+    if(dwError == ERROR_CANCELLED)
+        bnw::cerr << "You refused to elevate - cannot update" << std::endl;
+#endif
+    return false;
+}
+
+void executeUpdate(int argc, char* argv[])
 {
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
     bfs::path workPath = bfs::path(argv[0]).parent_path();
-// If the installation is the default one, update current installation
+    // If the installation is the default one, update current installation
 #ifdef _WIN32
     if(bfs::exists(workPath.parent_path() / std::string("s25client.exe")))
         workPath = workPath.parent_path();
@@ -336,55 +388,21 @@ int main(int argc, char* argv[])
     }
 
     if(verbose)
-        std::cout << "Using directory " << workPath << std::endl;
+        bnw::cout << "Using directory " << workPath << std::endl;
     boost::system::error_code error;
     bfs::current_path(workPath, error);
     if(error)
-        std::cerr << "Warning: Failed to set working directory: " << error << std::endl;
+        bnw::cerr << "Warning: Failed to set working directory: " << error << std::endl;
 
-#ifdef _WIN32
-    HANDLE hFile = CreateFileW(L"write.test", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-    if(hFile == INVALID_HANDLE_VALUE)
+    if(!isCurrentDirWritable())
     {
-        if(GetLastError() != ERROR_ACCESS_DENIED)
+        if(runAsAdmin(argc, argv))
         {
-            print_last_error();
-            return 1;
-        }
-
-        std::cout << "Cannot write to update directory, trying to elevate to administrator" << std::endl;
-
-        std::stringstream arguments;
-        for(int i = 1; i < argc; ++i)
-            arguments << argv[i];
-
-        // Launch itself as administrator.
-        SHELLEXECUTEINFOA sei = {sizeof(sei)};
-        sei.lpVerb = "runas";
-        sei.lpFile = argv[0];
-        sei.hwnd = GetConsoleWindow();
-        sei.lpParameters = arguments.str().c_str();
-        sei.nShow = SW_NORMAL;
-        sei.fMask = SEE_MASK_NOASYNC;
-
-        if(!ShellExecuteExA(&sei))
-        {
-            DWORD dwError = GetLastError();
-            if(dwError == ERROR_CANCELLED)
-            {
-                std::cerr << "You refused to elevate - cannot update" << std::endl;
-                return 1;
-            }
-        }
-
-        std::cout << "Update should have been run successfully" << std::endl;
-        return 0;
-    } else
-    {
-        CloseHandle(hFile);
-        DeleteFileW(L"write.test");
+            bnw::cout << "Update should have been run successfully" << std::endl;
+            return;
+        } else
+            throw std::runtime_error("Update failed. Current dir is not writeable");
     }
-#endif
 
     // initialize curl
     curl_global_init(CURL_GLOBAL_ALL);
@@ -401,7 +419,7 @@ int main(int argc, char* argv[])
     // download filelist
     url << httpbase << TARGET << "." << ARCH << FILEPATH << FILELIST;
     if(verbose)
-        std::cout << "Requesting current version information from server..." << std::endl;
+        bnw::cout << "Requesting current version information from server..." << std::endl;
     std::string filelist;
     if(DownloadFile(url.str(), filelist))
     {
@@ -410,7 +428,7 @@ int main(int argc, char* argv[])
         httpbase = url.str();
     } else
     {
-        std::cout << "Warning: Was not able to get current masterfile, trying older ones" << std::endl;
+        bnw::cout << "Warning: Was not able to get current masterfile, trying older ones" << std::endl;
 
         bool ok = false;
         for(int i = 0; i < 5; ++i)
@@ -428,16 +446,10 @@ int main(int argc, char* argv[])
 
                 break;
             }
-            std::cout << "Warning: Was not able to get masterfile " << i + 1 << ", trying older one" << std::endl;
+            bnw::cout << "Warning: Was not able to get masterfile " << i + 1 << ", trying older one" << std::endl;
         }
         if(!ok)
-        {
-#if defined _DEBUG && defined _MSC_VER
-            std::cout << "Press return to continue . . ." << std::flush;
-            std::cin.get();
-#endif
-            return 1;
-        }
+            throw std::runtime_error("Could not get any master file");
     }
 
     // httpbase now includes targetpath and filepath
@@ -447,12 +459,12 @@ int main(int argc, char* argv[])
     url << httpbase << LINKLIST;
     std::string linklist;
     if(!DownloadFile(url.str(), linklist))
-        std::cerr << "Warning: Was not able to get linkfile, ignoring" << std::endl;
+        bnw::cout << "Warning: Was not able to get linkfile, ignoring" << std::endl;
 
     std::stringstream flstream(filelist);
 
     if(verbose)
-        std::cout << "Parsing update list..." << std::endl;
+        bnw::cout << "Parsing update list..." << std::endl;
     // parse filelist
     std::vector<std::pair<std::string, std::string> > files;
     std::string line;
@@ -478,7 +490,7 @@ int main(int argc, char* argv[])
     if(!savegameversionFilepath.empty() && bfs::exists(savegameversionFilepath))
     {
         if(!ValidateSavegameVersion(httpbase, savegameversionFilepath))
-            return 0;
+            return;
     }
 
     std::stringstream llstream(linklist);
@@ -508,7 +520,7 @@ int main(int argc, char* argv[])
 
         // check hash of file
         std::string nhash = md5sum(filePath.string());
-        // std::cerr << hash << " - " << nhash << std::endl;
+        // bnw::cout << hash << " - " << nhash << std::endl;
         if(hash == nhash)
             continue;
 
@@ -517,13 +529,21 @@ int main(int argc, char* argv[])
         bfs::path bzfile = filePath;
         bzfile += ".bz2";
 
-        // create path of file
-        bfs::create_directories(path);
-
-        std::cout << "Updating " << name;
+        bnw::cout << "Updating " << name;
         if(verbose)
-            std::cout << " to " << path;
-        std::cout << std::endl << std::endl;
+            bnw::cout << " to " << path;
+        bnw::cout << std::endl << std::endl;
+
+        // create path of file
+        try
+        {
+            bfs::create_directories(path);
+        } catch(const std::exception& e)
+        {
+            std::stringstream msg;
+            msg << "Failed to create directories to path " << path << " for " << name << ": " << e.what() << std::endl;
+            throw std::runtime_error(msg.str());
+        }
 
         std::stringstream progress;
         progress << "Downloading " << name;
@@ -538,33 +558,26 @@ int main(int argc, char* argv[])
         // download the file
         bool dlOk = DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
 
-        std::cout << " - ";
+        bnw::cout << " - ";
         if(!dlOk)
         {
-            std::cout << "failed!" << std::endl;
-            std::cerr << "Download of " << bzfile << "failed!" << std::endl;
-            return 1;
+            bnw::cout << "failed!" << std::endl;
+            throw std::runtime_error("Download of " + bzfile.string() + "failed!");
         }
 
         // extract the file
         int bzerror = BZ_OK;
         FILE* bzfp = boost::nowide::fopen(bzfile.string().c_str(), "rb");
         if(!bzfp)
-        {
-            std::cerr << "decompression failed: download failure?" << std::endl;
-            return 1;
-        }
+            throw std::runtime_error("decompression failed: download failure?");
 
         bzerror = BZ_OK;
         BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, NULL, 0);
         if(!bz2fp)
-        {
-            std::cout << "decompression failed: compressed file corrupt?" << std::endl;
-            return 1;
-        }
+            throw std::runtime_error("decompression failed: compressed file corrupt?");
 
-        FILE* fp = boost::nowide::fopen(filePath.string().c_str(), "wb");
-        if(!fp)
+        bnw::ofstream outputFile(filePath, bnw::ofstream::binary | bnw::ofstream::trunc);
+        if(!outputFile)
         {
             boost::system::error_code error;
             bfs::path bakFilePath(filePath);
@@ -572,28 +585,21 @@ int main(int argc, char* argv[])
             bfs::rename(filePath, bakFilePath, error);
             // move file out of the way ...
             if(error)
-            {
-                std::cout << "failed to move blocked file " << filePath << " out of the way ..." << std::endl;
-                return 1;
-            }
-            fp = boost::nowide::fopen(filePath.string().c_str(), "wb");
+                throw std::runtime_error("failed to move blocked file " + filePath.string() + " out of the way ...");
+            outputFile.open(filePath, bnw::ofstream::binary | bnw::ofstream::trunc);
         }
-        if(!fp)
-        {
-            std::cout << "decompression failed: compressed data corrupt?" << std::endl;
-            return 1;
-        }
+        if(!outputFile)
+            throw std::runtime_error("Failed to open output file " + filePath.string());
 
         while(bzerror == BZ_OK)
         {
             char buffer[1024];
             unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer, 1024);
-            if(fwrite(buffer, 1, read, fp) != read)
-                std::cout << "failed to write to disk";
+            if(!outputFile.write(buffer, read))
+                bnw::cerr << "failed to write to disk" << std::endl;
         }
-        fclose(fp);
 
-        std::cout << "ok";
+        bnw::cout << "ok";
 
         BZ2_bzReadClose(&bzerror, bz2fp);
         fclose(bzfp);
@@ -601,7 +607,7 @@ int main(int argc, char* argv[])
         // remove compressed file
         bfs::remove(bzfile);
 
-        std::cout << std::endl;
+        bnw::cout << std::endl;
 
         updated = true;
 #ifdef _WIN32
@@ -611,35 +617,51 @@ int main(int argc, char* argv[])
     }
 
     if(verbose)
-        std::cout << "Updating folder structure..." << std::endl;
+        bnw::cout << "Updating folder structure..." << std::endl;
 
     for(std::vector<std::pair<std::string, std::string> >::iterator it = links.begin(); it != links.end(); ++it)
     {
     // Note: Symlink = it->first pointing to it->second (it->second) exists
 #ifdef _WIN32
-        std::cout << "Copying file " << it->second << std::endl;
+        bnw::cout << "Copying file " << it->second << std::endl;
         bfs::path path = bfs::path(it->first).parent_path();
         bfs::path srcFilepath = path / it->second;
         boost::system::error_code ec;
         bfs::copy_file(srcFilepath, it->first, bfs::copy_option::overwrite_if_exists, ec);
         if(ec)
-            std::cerr << "Failed to copy file '" << srcFilepath << "' to '" << it->first << "': " << ec.message() << std::endl;
+            bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << it->first << "': " << ec.message() << std::endl;
 #else
-        std::cout << "creating symlink " << it->first << std::endl;
+        bnw::cout << "creating symlink " << it->first << std::endl;
         if(!bfs::exists(it->first))
         {
             boost::system::error_code ec;
             bfs::create_symlink(it->second, it->first, ec);
             if(ec)
-                std::cout << "Failed to create symlink: '" << it->first << "' to '" << it->second << "': " << ec.message() << std::endl;
+                bnw::cerr << "Failed to create symlink: '" << it->first << "' to '" << it->second << "': " << ec.message() << std::endl;
         }
 #endif
     }
 
     if(updated)
-        std::cout << "Update finished!" << std::endl;
+        bnw::cout << "Update finished!" << std::endl;
+}
+
+/**
+ *  main function
+ */
+int main(int argc, char* argv[])
+{
+    try
+    {
+        executeUpdate(argc, argv);
+    } catch(const std::exception& e)
+    {
+        bnw::cerr << "Update failed: " << e.what() << std::endl;
+        return 1;
+    }
+
 #if defined _DEBUG && defined _MSC_VER
-    std::cout << "Press return to continue . . ." << std::flush;
+    bnw::cout << "Press return to continue . . ." << std::flush;
     std::cin.get();
 #endif
 
