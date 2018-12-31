@@ -38,7 +38,7 @@ void byteSwap(uint32_t* buf, unsigned words)
 {
     for(; words > 0; --words)
     {
-        uint8_t* p = (uint8_t*)buf;
+        uint8_t* p = (uint8_t*)buf; //-V206
         *buf++ = (uint32_t)p[3] << 24 | (uint32_t)p[2] << 16 | (uint32_t)p[1] << 8 | p[0];
     }
 }
@@ -70,12 +70,12 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
 
     if(t > len)
     {
-        memcpy((uint8_t*)ctx->in + 64 - t, buf, len);
+        memcpy((uint8_t*)ctx->in + 64 - t, buf, len); //-V206
         return;
     }
 
     // First chunk is an odd size
-    memcpy((uint8_t*)ctx->in + 64 - t, buf, t);
+    memcpy((uint8_t*)ctx->in + 64 - t, buf, t); //-V206
     byteSwap(ctx->in, 16);
     md5Transform(ctx->buf, ctx->in);
     buf += t;
@@ -102,7 +102,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
 {
     // Number of bytes in ctx->in
     size_t count = ctx->bytes & 63;
-    uint8_t* p = (uint8_t*)ctx->in + count;
+    uint8_t* p = (uint8_t*)ctx->in + count; //-V206
 
     // Set the first char of padding to 0x80.  There is always room.
     *p++ = 0x80;
@@ -116,7 +116,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
         memset(p, 0, 64 - count);
         byteSwap(ctx->in, 16);
         md5Transform(ctx->buf, ctx->in);
-        p = (uint8_t*)ctx->in;
+        p = (uint8_t*)ctx->in; //-V206
         padding = 56;
     } else
         padding = 56 - count;

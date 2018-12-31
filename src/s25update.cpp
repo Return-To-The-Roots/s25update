@@ -171,15 +171,15 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
 
     curl_handle = curl_easy_init();
 
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str()); //-V111
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "s25update/1.1");
     curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
     // Write file to Memory?
     if(path.empty())
     {
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(&to));
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback); //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(&to)); //-V111
     } else
     {
         tofp = boost::nowide::fopen(npath.c_str(), "wb");
@@ -188,16 +188,16 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
             bnw::cerr << "Can't open file \"" << npath << "\"!!!!" << std::endl;
             ok = false;
         }
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(tofp));
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);        //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(tofp)); //-V111
     }
 
     // Show Progress?
     if(!progress.empty())
     {
         curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(&progress));
+        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);       //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(&progress)); //-V111
     }
 
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
@@ -240,8 +240,8 @@ std::string get_last_error_string()
 {
     LPVOID lpMsgBuf;
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(),
-                  0, // Default language
-                  (LPSTR)&lpMsgBuf, 0, NULL);
+                   0, // Default language
+                   (LPSTR)&lpMsgBuf, 0, NULL);
     std::string result = (LPCSTR)lpMsgBuf;
     // Free the buffer.
     LocalFree(lpMsgBuf);
