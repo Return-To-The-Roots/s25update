@@ -466,7 +466,7 @@ void executeUpdate(int argc, char* argv[])
     if(verbose)
         bnw::cout << "Parsing update list..." << std::endl;
     // parse filelist
-    std::vector<std::pair<std::string, std::string> > files;
+    std::vector<std::pair<std::string, std::string>> files;
     std::string line;
     bfs::path savegameversionFilepath;
 
@@ -495,7 +495,7 @@ void executeUpdate(int argc, char* argv[])
 
     std::stringstream llstream(linklist);
 
-    std::vector<std::pair<std::string, std::string> > links;
+    std::vector<std::pair<std::string, std::string>> links;
     // parse linklist
     while(getline(llstream, line))
     {
@@ -512,7 +512,7 @@ void executeUpdate(int argc, char* argv[])
     }
 
     // check md5 of files and download them
-    for(std::vector<std::pair<std::string, std::string> >::iterator it = files.begin(); it != files.end(); ++it)
+    for(std::vector<std::pair<std::string, std::string>>::iterator it = files.begin(); it != files.end(); ++it)
     {
         std::string hash = it->first;
         bfs::path filePath = it->second;
@@ -622,7 +622,7 @@ void executeUpdate(int argc, char* argv[])
     if(verbose)
         bnw::cout << "Updating folder structure..." << std::endl;
 
-    for(std::vector<std::pair<std::string, std::string> >::iterator it = links.begin(); it != links.end(); ++it)
+    for(std::vector<std::pair<std::string, std::string>>::iterator it = links.begin(); it != links.end(); ++it)
     {
     // Note: Symlink = it->first pointing to it->second (it->second) exists
 #ifdef _WIN32
