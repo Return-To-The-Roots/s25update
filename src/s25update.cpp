@@ -535,14 +535,17 @@ void executeUpdate(int argc, char* argv[])
         bnw::cout << std::endl << std::endl;
 
         // create path of file
-        try
+        if(!bfs::is_directory(path))
         {
-            bfs::create_directories(path);
-        } catch(const std::exception& e)
-        {
-            std::stringstream msg;
-            msg << "Failed to create directories to path " << path << " for " << name << ": " << e.what() << std::endl;
-            throw std::runtime_error(msg.str());
+            try
+            {
+                bfs::create_directories(path);
+            } catch(const std::exception& e)
+            {
+                std::stringstream msg;
+                msg << "Failed to create directories to path " << path << " for " << name << ": " << e.what() << std::endl;
+                throw std::runtime_error(msg.str());
+            }
         }
 
         std::stringstream progress;
