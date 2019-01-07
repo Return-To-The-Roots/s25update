@@ -359,18 +359,21 @@ void executeUpdate(int argc, char* argv[])
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
-    bfs::path workPath = bfs::path(argv[0]).parent_path();
+    bfs::path workPath = bfs::canonical(bfs::path(argv[0]).parent_path());
+
     // If the installation is the default one, update current installation
+    // TODO: get these paths from cmake and implement some kind of automatic search?
 #ifdef _WIN32
-    if(bfs::exists(workPath.parent_path() / std::string("s25client.exe")))
-        workPath = workPath.parent_path();
+    bfs::path tmpPath = workPath.parent_path();
+    if(bfs::exists(workPath.parent_path() / std::string("RTTR/s25update.exe")))
+        workPath = tmpPath;
 #elif defined(__APPLE__)
-    bfs::path tmpPath = workPath.parent_path().parent_path().parent_path().parent_path();
-    if(bfs::exists(tmpPath / std::string("s25client.app/Contents/MacOS/bin/RTTR/s25update")))
+    bfs::path tmpPath = workPath.parent_path().parent_path().parent_path();
+    if(bfs::exists(tmpPath / std::string("s25client.app/Contents/MacOS/s25update")))
         workPath = tmpPath;
 #else
     bfs::path tmpPath = workPath.parent_path();
-    if(bfs::exists(tmpPath / std::string("bin/RTTR/s25update")))
+    if(bfs::exists(tmpPath / std::string("libexec/s25rttr/s25update")))
         workPath = tmpPath;
 #endif
 
