@@ -535,7 +535,7 @@ void executeUpdate(int argc, char* argv[])
         bnw::cout << "Updating " << name;
         if(verbose)
             bnw::cout << " to " << path;
-        bnw::cout << std::endl << std::endl;
+        bnw::cout << std::endl;
 
         // create path of file
         if(!bfs::is_directory(path))
