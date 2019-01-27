@@ -306,11 +306,6 @@ bool isCurrentDirWritable()
         if(GetLastError() != ERROR_ACCESS_DENIED)
             throw std::runtime_error(get_last_error_string());
         return false;
-
-        bnw::cout << "Cannot write to update directory, trying to elevate to administrator" << std::endl;
-
-        bnw::cout << "Update should have been run successfully" << std::endl;
-        return 0;
     } else
     {
         CloseHandle(hFile);
