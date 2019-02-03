@@ -354,7 +354,7 @@ void executeUpdate(int argc, char* argv[])
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
-    bfs::path workPath = bfs::canonical(bfs::path(argv[0]).parent_path());
+    bfs::path workPath = bfs::path(argv[0]).parent_path().lexically_normal();
 
     // If the installation is the default one, update current installation
     // TODO: get these paths from cmake and implement some kind of automatic search?
