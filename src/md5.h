@@ -23,9 +23,9 @@ struct md5Context
     uint32_t in[16];
 };
 
-void md5Init(struct md5Context* context);
-void md5Update(struct md5Context* context, uint8_t const* buf, size_t len);
-void md5Final(struct md5Context* context, unsigned char digest[16]);
+void md5Init(struct md5Context* ctx);
+void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len);
+void md5Final(struct md5Context* ctx, unsigned char digest[16]);
 void md5Transform(uint32_t buf[4], const uint32_t in[16]);
 
 #endif
