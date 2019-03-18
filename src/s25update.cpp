@@ -510,10 +510,10 @@ void executeUpdate(int argc, char* argv[])
     }
 
     // check md5 of files and download them
-    for(std::vector<std::pair<std::string, std::string>>::iterator it = files.begin(); it != files.end(); ++it)
+    for(auto& file : files)
     {
-        std::string hash = it->first;
-        bfs::path filePath = it->second;
+        std::string hash = file.first;
+        bfs::path filePath = file.second;
         filePath.make_preferred();
 
         // check hash of file
@@ -552,7 +552,7 @@ void executeUpdate(int argc, char* argv[])
             progress << " ";
 
         url.str("");
-        bfs::path urlPath = bfs::path(it->second).parent_path();
+        bfs::path urlPath = bfs::path(file.second).parent_path();
         url << httpbase << "/" << urlPath.string() << "/" << EscapeFile(name.string()) << ".bz2";
         std::string fdata = "";
 
@@ -620,7 +620,7 @@ void executeUpdate(int argc, char* argv[])
     if(verbose)
         bnw::cout << "Updating folder structure..." << std::endl;
 
-    for(std::vector<std::pair<std::string, std::string>>::iterator it = links.begin(); it != links.end(); ++it)
+    for(auto& link : links)
     {
     // Note: Symlink = it->first pointing to it->second (it->second) exists
 #ifdef _WIN32
@@ -632,13 +632,13 @@ void executeUpdate(int argc, char* argv[])
         if(ec)
             bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << it->first << "': " << ec.message() << std::endl;
 #else
-        bnw::cout << "creating symlink " << it->first << std::endl;
-        if(!bfs::exists(it->first))
+        bnw::cout << "creating symlink " << link.first << std::endl;
+        if(!bfs::exists(link.first))
         {
             boost::system::error_code ec;
-            bfs::create_symlink(it->second, it->first, ec);
+            bfs::create_symlink(link.second, link.first, ec);
             if(ec)
-                bnw::cerr << "Failed to create symlink: '" << it->first << "' to '" << it->second << "': " << ec.message() << std::endl;
+                bnw::cerr << "Failed to create symlink: '" << link.first << "' to '" << link.second << "': " << ec.message() << std::endl;
         }
 #endif
     }
