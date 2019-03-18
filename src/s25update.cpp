@@ -283,7 +283,7 @@ bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& saveg
         bnw::cout << "Warning: You will not be able to load your existing savegames. " << std::endl;
     }
     bnw::cout << "Cancel update? (y/n) ";
-    char input = static_cast<char>(std::cin.get());
+    auto input = static_cast<char>(std::cin.get());
     if(input != 'n' && input != 'N')
     {
         bnw::cout << std::endl

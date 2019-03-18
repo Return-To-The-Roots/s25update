@@ -38,7 +38,7 @@ void byteSwap(uint32_t* buf, unsigned words)
 {
     for(; words > 0; --words)
     {
-        uint8_t* p = (uint8_t*)buf; //-V206
+        auto* p = (uint8_t*)buf; //-V206
         *buf++ = (uint32_t)p[3] << 24 | (uint32_t)p[2] << 16 | (uint32_t)p[1] << 8 | p[0];
     }
 }
