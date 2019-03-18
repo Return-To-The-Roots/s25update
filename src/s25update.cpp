@@ -164,7 +164,7 @@ static std::string EscapeFile(const std::string& file)
 static bool DownloadFile(const std::string& url, std::string& to, const std::string& path = "", std::string progress = "")
 {
     CURL* curl_handle;
-    FILE* tofp = NULL;
+    FILE* tofp = nullptr;
     bool ok = true;
 
     std::string npath = path + ".new";
@@ -573,7 +573,7 @@ void executeUpdate(int argc, char* argv[])
             throw std::runtime_error("decompression failed: download failure?");
 
         bzerror = BZ_OK;
-        BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, NULL, 0);
+        BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, nullptr, 0);
         if(!bz2fp)
             throw std::runtime_error("decompression failed: compressed file corrupt?");
 
