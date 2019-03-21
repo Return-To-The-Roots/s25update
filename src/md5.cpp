@@ -141,7 +141,7 @@ void md5Final(md5Context* ctx, std::array<uint8_t, 16>& digest)
 #define F4(x, y, z) ((y) ^ ((x) | ~(z)))
 
 // This is the central step in the MD5 algorithm.
-#define MD5STEP(f, w, x, y, z, in, s) (w += f((x), (y), (z)) + (in), w = ((w) << (s) | (w) >> (32 - (s))) + (x))
+#define MD5STEP(f, w, x, y, z, in, s) ((w) += f((x), (y), (z)) + (in), (w) = ((w) << (s) | (w) >> (32 - (s))) + (x))
 
 /*
  * The core of the MD5 algorithm, this alters an existing MD5 hash to
