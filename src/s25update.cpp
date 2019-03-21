@@ -594,9 +594,9 @@ void executeUpdate(int argc, char* argv[])
 
         while(bzerror == BZ_OK)
         {
-            char buffer[1024];
-            unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer, 1024);
-            if(!outputFile.write(buffer, read))
+            std::array<char, 1024> buffer;
+            unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), buffer.size());
+            if(!outputFile.write(buffer.data(), read))
                 bnw::cerr << "failed to write to disk" << std::endl;
         }
 

@@ -20,27 +20,26 @@
  * Written March 1993 by Branko Lankester
  * Modified June 1993 by Colin Plumb for altered md5.c.
  */
+#include "md5sum.h"
+#include "md5.h"
+#include <array>
 #include <cstdio>
-
 #include <iomanip>
 #include <sstream>
 #include <string>
-
-#include "md5.h"
-#include "md5sum.h"
 
 int md5file(FILE* fp, std::string& digest)
 {
     if(!fp)
         return -1;
-    unsigned char d[16];
-    unsigned char buf[1024];
+    std::array<unsigned char, 16> d;
+    std::array<unsigned char, 1024> buf;
     md5Context ctx;
 
     md5Init(&ctx);
     size_t n;
-    while((n = fread(buf, 1, sizeof(buf), fp)) > 0)
-        md5Update(&ctx, buf, n);
+    while((n = fread(buf.data(), 1, sizeof(buf), fp)) > 0)
+        md5Update(&ctx, buf.data(), n);
     md5Final(&ctx, d);
 
     std::stringstream s;

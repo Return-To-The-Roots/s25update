@@ -18,11 +18,10 @@
  * little-endian machines, as performance isn't critical here.
  */
 
+#include "md5.h"
 #include <cstring> // for memcpy()
 
-#include "md5.h"
-
-void md5(const uint8_t* buf, size_t len, uint8_t* digest)
+void md5(const uint8_t* buf, size_t len, std::array<uint8_t, 16>& digest)
 {
     md5Context context;
 
@@ -70,13 +69,13 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
 
     if(t > len)
     {
-        memcpy((uint8_t*)ctx->in + 64 - t, buf, len); //-V206
+        memcpy((uint8_t*)ctx->in.data() + 64 - t, buf, len); //-V206
         return;
     }
 
     // First chunk is an odd size
-    memcpy((uint8_t*)ctx->in + 64 - t, buf, t); //-V206
-    byteSwap(ctx->in, 16);
+    memcpy((uint8_t*)ctx->in.data() + 64 - t, buf, t); //-V206
+    byteSwap(ctx->in.data(), 16);
     md5Transform(ctx->buf, ctx->in);
     buf += t;
     len -= t;
@@ -84,25 +83,25 @@ void md5Update(struct md5Context* ctx, uint8_t const* buf, size_t len)
     // Process data in 64-byte chunks
     for(; len >= 64; len -= 64)
     {
-        memcpy(ctx->in, buf, 64);
-        byteSwap(ctx->in, 16);
+        memcpy(ctx->in.data(), buf, 64);
+        byteSwap(ctx->in.data(), 16);
         md5Transform(ctx->buf, ctx->in);
         buf += 64;
     }
 
     // Handle any remaining bytes of data.
-    memcpy(ctx->in, buf, len);
+    memcpy(ctx->in.data(), buf, len);
 }
 
 /*
  * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void md5Final(struct md5Context* ctx, uint8_t digest[16])
+void md5Final(md5Context* ctx, std::array<uint8_t, 16>& digest)
 {
     // Number of bytes in ctx->in
     size_t count = ctx->bytes & 63;
-    uint8_t* p = (uint8_t*)ctx->in + count; //-V206
+    uint8_t* p = (uint8_t*)ctx->in.data() + count; //-V206
 
     // Set the first char of padding to 0x80.  There is always room.
     *p++ = 0x80;
@@ -114,22 +113,22 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
     {
         // Padding forces an extra block
         memset(p, 0, 64 - count);
-        byteSwap(ctx->in, 16);
+        byteSwap(ctx->in.data(), 16);
         md5Transform(ctx->buf, ctx->in);
-        p = (uint8_t*)ctx->in; //-V206
+        p = (uint8_t*)ctx->in.data(); //-V206
         padding = 56;
     } else
         padding = 56 - count;
     memset(p, 0, padding);
-    byteSwap(ctx->in, 14);
+    byteSwap(ctx->in.data(), 14);
 
     // Append length in bits and transform
     ctx->in[14] = (ctx->bytes << 3) & 0xFFFFFFFF;
     ctx->in[15] = (ctx->bytes >> 29) & 0xFFFFFFFF;
     md5Transform(ctx->buf, ctx->in);
 
-    byteSwap(ctx->buf, 4);
-    memcpy(digest, ctx->buf, 16);
+    byteSwap(ctx->buf.data(), 4);
+    memcpy(digest.data(), ctx->buf.data(), 16);
     memset(ctx, 0, sizeof(*ctx)); // In case it's sensitive
 }
 
@@ -149,7 +148,7 @@ void md5Final(struct md5Context* ctx, uint8_t digest[16])
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-void md5Transform(uint32_t buf[4], const uint32_t in[16])
+void md5Transform(std::array<uint32_t, 4>& buf, const std::array<uint32_t, 16>& in)
 {
     uint32_t a, b, c, d;
 
