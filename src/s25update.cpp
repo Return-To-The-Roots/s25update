@@ -221,7 +221,7 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
  */
 std::string md5sum(const std::string& file)
 {
-    std::string digest = "";
+    std::string digest;
 
     FILE* fp = boost::nowide::fopen(file.c_str(), "rb");
     if(fp)
@@ -554,7 +554,7 @@ void executeUpdate(int argc, char* argv[])
         url.str("");
         bfs::path urlPath = bfs::path(file.second).parent_path();
         url << httpbase << "/" << urlPath.string() << "/" << EscapeFile(name.string()) << ".bz2";
-        std::string fdata = "";
+        std::string fdata;
 
         // download the file
         bool dlOk = DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
