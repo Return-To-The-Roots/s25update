@@ -21,6 +21,8 @@
 #include <boost/nowide/cstdio.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/iostream.hpp>
+#include <boost/optional.hpp>
+#include <algorithm>
 #include <bzlib.h>
 #include <curl/curl.h>
 #include <iomanip>
@@ -142,11 +144,9 @@ static int ProgressBarCallback(std::string* data, double dltotal, double dlnow, 
  */
 static std::string EscapeFile(const std::string& file)
 {
-    CURL* curl_handle;
-    std::string result;
-
-    curl_handle = curl_easy_init();
+    CURL* curl_handle = curl_easy_init();
     char* escaped = curl_easy_escape(curl_handle, file.c_str(), static_cast<int>(file.length()));
+    std::string result;
     if(escaped)
     {
         result = escaped;
@@ -161,15 +161,15 @@ static std::string EscapeFile(const std::string& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-static bool DownloadFile(const std::string& url, std::string& to, const std::string& path = "", std::string progress = "")
+static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "", std::string progress = "")
 {
-    CURL* curl_handle;
     FILE* tofp = nullptr;
     bool ok = true;
 
-    std::string npath = path + ".new";
+    bfs::path tmpPath = path;
+    tmpPath += ".new";
 
-    curl_handle = curl_easy_init();
+    CURL* curl_handle = curl_easy_init();
 
     curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str()); //-V111
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "s25update/1.1");
@@ -178,14 +178,16 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
     // Write file to Memory?
     if(path.empty())
     {
+        if(!to)
+            throw std::logic_error("No target for download given");
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback); //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(&to)); //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(to));  //-V111
     } else
     {
-        tofp = boost::nowide::fopen(npath.c_str(), "wb");
+        tofp = boost::nowide::fopen(tmpPath.string().c_str(), "wb");
         if(!tofp)
         {
-            bnw::cerr << "Can't open file \"" << npath << "\"!!!!" << std::endl;
+            bnw::cerr << "Can't open file \"" << tmpPath << "\"!!!!" << std::endl;
             ok = false;
         }
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);        //-V111
@@ -202,18 +204,34 @@ static bool DownloadFile(const std::string& url, std::string& to, const std::str
 
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
 
-    if(ok && curl_easy_perform(curl_handle) != 0)
-        ok = false;
+    if(ok)
+        ok = curl_easy_perform(curl_handle) == 0;
 
     curl_easy_cleanup(curl_handle);
 
-    if(tofp)
-        fclose(tofp);
-
-    if(ok)
-        rename(npath.c_str(), path.c_str());
+    if(!path.empty())
+    {
+        if(tofp)
+            fclose(tofp);
+        if(ok)
+            rename(tmpPath, path);
+    }
 
     return ok;
+}
+
+static bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
+{
+    return DoDownloadFile(url, nullptr, path, progress);
+}
+
+static boost::optional<std::string> DownloadFile(const std::string& url)
+{
+    std::string tmp;
+    if(DoDownloadFile(url, &tmp))
+        return tmp;
+    else
+        return boost::none;
 }
 
 /**
@@ -253,15 +271,15 @@ std::string get_last_error_string()
 bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& savegameversionFilePath)
 {
     // check new savegame version before downloading
-    std::string remote_savegameversion_content;
-    if(!DownloadFile(httpbase + SAVEGAMEVERSION, remote_savegameversion_content))
+    const auto remote_savegameversion_content = DownloadFile(httpbase + SAVEGAMEVERSION);
+    if(!remote_savegameversion_content)
     {
         bnw::cerr << "Error: Was not able to get remote savegame version, ignoring for now" << std::endl;
         return true;
         // return false; // uncomment this if it actually works (to not break updater now)
     }
     bnw::ifstream local_savegame_version(savegameversionFilePath);
-    std::stringstream remote_savegame_version(remote_savegameversion_content);
+    std::stringstream remote_savegame_version(*remote_savegameversion_content);
     int localVersion, remoteVersion;
     if(!(local_savegame_version >> localVersion && remote_savegame_version >> remoteVersion))
     {
@@ -270,7 +288,7 @@ bool ValidateSavegameVersion(const std::string& httpbase, const bfs::path& saveg
         local_savegame_version >> curVersion;
         bnw::cerr << "Error: Could not parse savegame versions" << std::endl
                   << "Current: " << curVersion << std::endl
-                  << "Update:  " << remote_savegameversion_content << std::endl;
+                  << "Update:  " << *remote_savegameversion_content << std::endl;
     } else
     {
         bnw::cout << "Savegame version of currently installed version: " << localVersion << std::endl;
@@ -349,6 +367,190 @@ bool runAsAdmin(int argc, char* argv[])
     return false;
 }
 
+auto parseFileList(const std::string& filelistFileContents)
+{
+    std::vector<std::pair<std::string, std::string>> files;
+    std::stringstream flstream(filelistFileContents);
+
+    std::string line;
+    while(getline(flstream, line))
+    {
+        if(line.empty())
+            break;
+
+        if(line.substr(32, 2) != "  ")
+            throw std::runtime_error("Invalid line in filelist: " + line);
+        std::string hash = line.substr(0, 32);
+        std::string file = line.substr(34);
+
+        files.emplace_back(std::move(hash), std::move(file));
+
+        if(flstream.fail())
+            break;
+    }
+    return files;
+}
+
+auto parseLinkList(const std::string& linkFileContents)
+{
+    // Format: <symlinkFilePath> <linkTarget>
+    std::vector<std::pair<std::string, std::string>> links;
+    std::stringstream llstream(linkFileContents);
+    std::string line;
+    while(getline(llstream, line))
+    {
+        if(line.empty())
+            break;
+        const auto spacePos = line.find(' ');
+        std::string linkTarget = line.substr(spacePos + 1);
+        std::string symlinkFilePath = line.substr(0, spacePos);
+
+        links.emplace_back(std::move(symlinkFilePath), std::move(linkTarget));
+
+        if(llstream.fail())
+            break;
+    }
+    return links;
+}
+
+void updateFile(const std::string& httpBase, const std::string& origFilePath, const bool verbose)
+{
+    const bfs::path filepath = bfs::path(origFilePath).make_preferred();
+    const bfs::path name = filepath.filename();
+    const bfs::path path = filepath.parent_path();
+    bfs::path bzfile = filepath;
+    bzfile += ".bz2";
+
+    bnw::cout << "Updating " << name;
+    if(verbose)
+        bnw::cout << " to " << path;
+    bnw::cout << std::endl;
+
+    // create path of file
+    if(!bfs::is_directory(path))
+    {
+        boost::system::error_code ec;
+        bfs::create_directories(path, ec);
+        if(ec)
+        {
+            std::stringstream msg;
+            msg << "Failed to create directories to path " << path << " for " << name << ": " << ec.message() << std::endl;
+            throw std::runtime_error(msg.str());
+        }
+    }
+
+    std::stringstream progress;
+    progress << "Downloading " << name;
+    while(progress.str().size() < 50)
+        progress << " ";
+
+    std::stringstream url;
+    url << httpBase << "/" << bfs::path(origFilePath).parent_path().string() << "/" << EscapeFile(name.string()) << ".bz2";
+
+    // download the file
+    bool dlOk = DownloadFile(url.str(), bzfile, progress.str());
+
+    bnw::cout << " - ";
+    if(!dlOk)
+    {
+        bnw::cout << "failed!" << std::endl;
+        throw std::runtime_error("Download of " + bzfile.string() + "failed!");
+    }
+
+    // extract the file
+    int bzerror = BZ_OK;
+    FILE* bzfp = boost::nowide::fopen(bzfile.string().c_str(), "rb");
+    if(!bzfp)
+        throw std::runtime_error("decompression failed: download failure?");
+
+    bzerror = BZ_OK;
+    BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, nullptr, 0);
+    if(!bz2fp)
+        throw std::runtime_error("decompression failed: compressed file corrupt?");
+
+    bnw::ofstream outputFile(filepath, bnw::ofstream::binary | bnw::ofstream::trunc);
+    if(!outputFile)
+    {
+        bfs::path bakFilePath(filepath);
+        bakFilePath += ".bak";
+        boost::system::error_code error;
+        bfs::rename(filepath, bakFilePath, error);
+        // move file out of the way ...
+        if(error)
+            throw std::runtime_error("failed to move blocked file " + filepath.string() + " out of the way ...");
+        outputFile.open(filepath, bnw::ofstream::binary | bnw::ofstream::trunc);
+    }
+    if(!outputFile)
+        throw std::runtime_error("Failed to open output file " + filepath.string());
+
+    while(bzerror == BZ_OK)
+    {
+        std::array<char, 1024> buffer;
+        unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), buffer.size());
+        if(!outputFile.write(buffer.data(), read))
+            bnw::cerr << "failed to write to disk" << std::endl;
+    }
+
+    bnw::cout << "ok";
+
+    BZ2_bzReadClose(&bzerror, bz2fp);
+    fclose(bzfp);
+
+    // remove compressed file
+    bfs::remove(bzfile);
+
+    bnw::cout << std::endl;
+
+#ifdef _WIN32
+    // \r not working fix
+    backslashfix_y = backslashrfix(0);
+#endif // !_WIN32
+}
+
+/// Copy srcFile to destination or create a symlink at dst pointing to src
+void copyOrSymlink(const bfs::path& srcFileName, const bfs::path& dstFilepath)
+{
+#ifdef _WIN32
+    bnw::cout << "Copying file " << srcFileName << std::endl;
+    bfs::path path = dstFilepath.parent_path();
+    bfs::path srcFilepath = path / srcFileName;
+    boost::system::error_code ec;
+    bfs::copy_file(srcFilepath, dstFilepath, bfs::copy_option::overwrite_if_exists, ec);
+    if(ec)
+        bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << dstFilepath << "': " << ec.message() << std::endl;
+#else
+    bnw::cout << "Creating symlink " << dstFilepath << std::endl;
+    if(!bfs::exists(dstFilepath))
+    {
+        boost::system::error_code ec;
+        bfs::create_symlink(srcFileName, dstFilepath, ec);
+        if(ec)
+            bnw::cerr << "Failed to create symlink: '" << dstFilepath << "' to '" << srcFileName << "': " << ec.message() << std::endl;
+    }
+#endif
+}
+
+auto getPossibleHttpBases(const bool nightly)
+{
+    std::string base = HTTPHOST;
+    if(nightly)
+        base += NIGHTLYPATH;
+    else
+        base += STABLEPATH;
+
+    std::stringstream url;
+    url << base << TARGET << "." << ARCH;
+    const auto archBase = url.str();
+    std::vector<std::string> bases = {archBase + FILEPATH};
+    for(int i = 1; i <= 5; i++)
+    {
+        url.str(archBase);
+        url << "." << i << FILEPATH;
+        bases.push_back(url.str());
+    }
+    return bases;
+}
+
 void executeUpdate(int argc, char* argv[])
 {
     bool updated = false;
@@ -406,241 +608,68 @@ void executeUpdate(int argc, char* argv[])
     curl_global_init(CURL_GLOBAL_ALL);
     atexit(curl_global_cleanup);
 
-    std::string httpbase = HTTPHOST;
-    if(nightly)
-        httpbase += NIGHTLYPATH;
-    else
-        httpbase += STABLEPATH;
-
-    std::stringstream url;
-
     // download filelist
-    url << httpbase << TARGET << "." << ARCH << FILEPATH << FILELIST;
     if(verbose)
         bnw::cout << "Requesting current version information from server..." << std::endl;
-    std::string filelist;
-    if(DownloadFile(url.str(), filelist))
+    std::string httpbase, filelist;
+    const auto possibleBases = getPossibleHttpBases(nightly);
+    for(size_t i = 0; i < possibleBases.size(); i++)
     {
-        url.str("");
-        url << httpbase << TARGET << "." << ARCH << FILEPATH;
-        httpbase = url.str();
-    } else
-    {
-        bnw::cout << "Warning: Was not able to get current masterfile, trying older ones" << std::endl;
-
-        bool ok = false;
-        for(int i = 0; i < 5; ++i)
+        auto filelistOpt = DownloadFile(possibleBases[i] + FILELIST);
+        if(!filelistOpt)
+            bnw::cout << "Warning: Was not able to get masterfile " << i << ", trying older one" << std::endl;
+        else
         {
-            url.str("");
-            url << httpbase << TARGET << "." << ARCH << "." << i + 1 << FILEPATH << FILELIST;
-            if(DownloadFile(url.str(), filelist))
-            {
-                ok = true;
-
-                // set base for later use
-                url.str("");
-                url << httpbase << TARGET << "." << ARCH << "." << i + 1 << FILEPATH;
-                httpbase = url.str();
-
-                break;
-            }
-            bnw::cout << "Warning: Was not able to get masterfile " << i + 1 << ", trying older one" << std::endl;
+            filelist = *filelistOpt;
+            httpbase = possibleBases[i];
+            break;
         }
-        if(!ok)
-            throw std::runtime_error("Could not get any master file");
     }
+    if(filelist.empty())
+        throw std::runtime_error("Could not get any master file");
 
     // httpbase now includes targetpath and filepath
 
     // download linklist
-    url.str("");
-    url << httpbase << LINKLIST;
-    std::string linklist;
-    if(!DownloadFile(url.str(), linklist))
+    const auto linklist = DownloadFile(httpbase + LINKLIST);
+    if(!linklist)
         bnw::cout << "Warning: Was not able to get linkfile, ignoring" << std::endl;
-
-    std::stringstream flstream(filelist);
 
     if(verbose)
         bnw::cout << "Parsing update list..." << std::endl;
-    // parse filelist
-    std::vector<std::pair<std::string, std::string>> files;
-    std::string line;
-    bfs::path savegameversionFilepath;
 
-    while(getline(flstream, line))
+    const auto files = parseFileList(filelist);
+    const auto itSavegameversion =
+      std::find_if(files.begin(), files.end(), [](const auto& it) { return it.second.find(SAVEGAMEVERSION) != std::string::npos; });
+
+    if(itSavegameversion != files.end() && bfs::exists(itSavegameversion->second))
     {
-        if(line.length() == 0)
-            break;
-
-        std::string hash = line.substr(0, 32);
-        std::string file = line.substr(34);
-
-        files.push_back(std::pair<std::string, std::string>(hash, file));
-
-        if(file.find(SAVEGAMEVERSION) != std::string::npos)
-            savegameversionFilepath = file;
-
-        if(flstream.fail())
-            break;
-    }
-
-    if(!savegameversionFilepath.empty() && bfs::exists(savegameversionFilepath))
-    {
-        if(!ValidateSavegameVersion(httpbase, savegameversionFilepath))
+        if(!ValidateSavegameVersion(httpbase, itSavegameversion->second))
             return;
     }
 
-    std::stringstream llstream(linklist);
-
-    std::vector<std::pair<std::string, std::string>> links;
-    // parse linklist
-    while(getline(llstream, line))
-    {
-        if(line.length() == 0)
-            break;
-
-        std::string target = line.substr(line.find(' ') + 1);
-        std::string source = line.substr(0, line.rfind(' '));
-
-        links.push_back(std::pair<std::string, std::string>(source, target));
-
-        if(llstream.fail())
-            break;
-    }
+    const auto links = parseLinkList(*linklist);
 
     // check md5 of files and download them
-    for(auto& file : files)
+    for(const auto& file : files)
     {
-        std::string hash = file.first;
-        bfs::path filePath = file.second;
-        filePath.make_preferred();
+        const std::string hash = file.first;
+        const std::string filePath = file.second;
 
-        // check hash of file
-        std::string nhash = md5sum(filePath.string());
-        // bnw::cout << hash << " - " << nhash << std::endl;
-        if(hash == nhash)
+        if(hash == md5sum(filePath))
             continue;
 
-        bfs::path name = filePath.filename();
-        bfs::path path = filePath.parent_path();
-        bfs::path bzfile = filePath;
-        bzfile += ".bz2";
-
-        bnw::cout << "Updating " << name;
-        if(verbose)
-            bnw::cout << " to " << path;
-        bnw::cout << std::endl;
-
-        // create path of file
-        if(!bfs::is_directory(path))
-        {
-            try
-            {
-                bfs::create_directories(path);
-            } catch(const std::exception& e)
-            {
-                std::stringstream msg;
-                msg << "Failed to create directories to path " << path << " for " << name << ": " << e.what() << std::endl;
-                throw std::runtime_error(msg.str());
-            }
-        }
-
-        std::stringstream progress;
-        progress << "Downloading " << name;
-        while(progress.str().size() < 50)
-            progress << " ";
-
-        url.str("");
-        bfs::path urlPath = bfs::path(file.second).parent_path();
-        url << httpbase << "/" << urlPath.string() << "/" << EscapeFile(name.string()) << ".bz2";
-        std::string fdata;
-
-        // download the file
-        bool dlOk = DownloadFile(url.str(), fdata, bzfile.string(), progress.str());
-
-        bnw::cout << " - ";
-        if(!dlOk)
-        {
-            bnw::cout << "failed!" << std::endl;
-            throw std::runtime_error("Download of " + bzfile.string() + "failed!");
-        }
-
-        // extract the file
-        int bzerror = BZ_OK;
-        FILE* bzfp = boost::nowide::fopen(bzfile.string().c_str(), "rb");
-        if(!bzfp)
-            throw std::runtime_error("decompression failed: download failure?");
-
-        bzerror = BZ_OK;
-        BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, nullptr, 0);
-        if(!bz2fp)
-            throw std::runtime_error("decompression failed: compressed file corrupt?");
-
-        bnw::ofstream outputFile(filePath, bnw::ofstream::binary | bnw::ofstream::trunc);
-        if(!outputFile)
-        {
-            boost::system::error_code error;
-            bfs::path bakFilePath(filePath);
-            bakFilePath += ".bak";
-            bfs::rename(filePath, bakFilePath, error);
-            // move file out of the way ...
-            if(error)
-                throw std::runtime_error("failed to move blocked file " + filePath.string() + " out of the way ...");
-            outputFile.open(filePath, bnw::ofstream::binary | bnw::ofstream::trunc);
-        }
-        if(!outputFile)
-            throw std::runtime_error("Failed to open output file " + filePath.string());
-
-        while(bzerror == BZ_OK)
-        {
-            std::array<char, 1024> buffer;
-            unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), buffer.size());
-            if(!outputFile.write(buffer.data(), read))
-                bnw::cerr << "failed to write to disk" << std::endl;
-        }
-
-        bnw::cout << "ok";
-
-        BZ2_bzReadClose(&bzerror, bz2fp);
-        fclose(bzfp);
-
-        // remove compressed file
-        bfs::remove(bzfile);
-
-        bnw::cout << std::endl;
-
+        updateFile(httpbase, filePath, verbose);
         updated = true;
-#ifdef _WIN32
-        // \r not working fix
-        backslashfix_y = backslashrfix(0);
-#endif // !_WIN32
     }
 
     if(verbose)
         bnw::cout << "Updating folder structure..." << std::endl;
 
-    for(auto& link : links)
+    for(const auto& link : links)
     {
-    // Note: Symlink = it->first pointing to it->second (it->second) exists
-#ifdef _WIN32
-        bnw::cout << "Copying file " << it->second << std::endl;
-        bfs::path path = bfs::path(it->first).parent_path();
-        bfs::path srcFilepath = path / it->second;
-        boost::system::error_code ec;
-        bfs::copy_file(srcFilepath, it->first, bfs::copy_option::overwrite_if_exists, ec);
-        if(ec)
-            bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << it->first << "': " << ec.message() << std::endl;
-#else
-        bnw::cout << "creating symlink " << link.first << std::endl;
-        if(!bfs::exists(link.first))
-        {
-            boost::system::error_code ec;
-            bfs::create_symlink(link.second, link.first, ec);
-            if(ec)
-                bnw::cerr << "Failed to create symlink: '" << link.first << "' to '" << link.second << "': " << ec.message() << std::endl;
-        }
-#endif
+        // Note: Symlink = first pointing to second (second exists)
+        copyOrSymlink(link.second, link.first);
     }
 
     if(updated)
