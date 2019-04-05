@@ -23,6 +23,7 @@
 #include <boost/nowide/iostream.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
+#include <array>
 #include <bzlib.h>
 #include <curl/curl.h>
 #include <iomanip>
