@@ -487,7 +487,7 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
     while(bzerror == BZ_OK)
     {
         std::array<char, 1024> buffer;
-        unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), buffer.size());
+        unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), static_cast<int>(buffer.size()));
         if(!outputFile.write(buffer.data(), read))
             bnw::cerr << "failed to write to disk" << std::endl;
     }
