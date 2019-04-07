@@ -162,7 +162,7 @@ static std::string EscapeFile(const std::string& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "", std::string progress = "")
+static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "", std::string* progress = nullptr)
 {
     FILE* tofp = nullptr;
     bool ok = true;
@@ -196,11 +196,11 @@ static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::p
     }
 
     // Show Progress?
-    if(!progress.empty())
+    if(progress)
     {
         curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);       //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(&progress)); //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);      //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(progress)); //-V111
     }
 
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
@@ -223,7 +223,7 @@ static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::p
 
 static bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
 {
-    return DoDownloadFile(url, nullptr, path, progress);
+    return DoDownloadFile(url, nullptr, path, &progress);
 }
 
 static boost::optional<std::string> DownloadFile(const std::string& url)
