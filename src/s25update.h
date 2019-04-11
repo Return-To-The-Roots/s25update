@@ -33,7 +33,6 @@
 #include <crtdbg.h>
 #endif // _WIN32 && _DEBUG
 #else
-#include <cassert>
 #endif // !_WIN32
 
 #endif // S25UPDATE_H__
