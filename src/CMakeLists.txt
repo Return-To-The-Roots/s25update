@@ -1,44 +1,37 @@
-FIND_PACKAGE(CURL REQUIRED)
-FIND_PACKAGE(BZip2 1.0.6 REQUIRED)
-FIND_PACKAGE(Boost 1.55 REQUIRED COMPONENTS filesystem)
+find_package(CURL REQUIRED)
+find_package(BZip2 1.0.6 REQUIRED)
+find_package(Boost 1.55 REQUIRED COMPONENTS filesystem)
 
-INCLUDE_DIRECTORIES(SYSTEM
-                    ${CURL_INCLUDE_DIR}
-                    )
-
-################################################################################
-
-SET(s25update_SRCS s25update.cpp md5.cpp md5sum.cpp)
-SET(s25update_HEADERS s25update.h md5.h md5sum.h)
-source_group("Source Files" FILES ${s25update_SRCS})
-source_group("Header Files" FILES ${s25update_HEADERS})
+set(_sources s25update.cpp md5.cpp md5sum.cpp s25update.h md5.h md5sum.h)
 if(ClangFormat_FOUND)
-    add_ClangFormat_files(${s25update_SRCS} ${s25update_HEADERS})
+    add_ClangFormat_files(${_sources})
 endif()
-
-IF (WIN32 AND NOT CMAKE_HOST_WIN32)
-	ADD_DEFINITIONS("-DAFX_TARG_DEU")
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o COMMAND ${CMAKE_RC_COMPILER} -I${CMAKE_CURRENT_SOURCE_DIR}/../win32/ -i${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc -o ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o)
-
-	SET(s25update_SRCS ${s25update_SRCS} s25update.res.o)
-ENDIF()
-
-IF (MSVC)
-	SET(s25update_RC "${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc")
-	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
-ELSE()
-	SET(s25update_RC "")
-ENDIF()
-
-STRING(TOLOWER ${CMAKE_SYSTEM_NAME} LOWER_SYSTEM_NAME)
-ADD_DEFINITIONS("-DTARGET=\"${LOWER_SYSTEM_NAME}\"")
-ADD_DEFINITIONS("-DARCH=\"${PLATFORM_ARCH}\"")
 
 rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})
 
-ADD_EXECUTABLE(s25update ${s25update_SRCS} ${SOURCES_BZIP} ${s25update_RC})
-TARGET_LINK_LIBRARIES(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem nowide::static PUBLIC Boost::disable_autolinking)
+add_executable(s25update ${_sources})
+target_include_directories(s25update SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
+target_link_libraries(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem nowide::static Boost::disable_autolinking)
 target_compile_features(s25update PUBLIC cxx_std_14)
+if(NOT PLATFORM_NAME OR NOT PLATFORM_ARCH)
+	message(FATAL_ERROR "PLATFORM_NAME or PLATFORM_ARCH not set")
+endif()
+target_compile_definitions(s25update PRIVATE "TARGET=\"${PLATFORM_NAME}\"" "ARCH=\"${PLATFORM_ARCH}\"")
 
-INSTALL(TARGETS s25update RUNTIME DESTINATION ${RTTR_EXTRA_BINDIR})
+if(WIN32)
+	if(MSVC)
+		target_sources(s25update PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc")
+		set_property(TARGET s25update APPEND_STRING PROPERTY LINK_FLAGS " /MANIFEST:NO")
+	else()
+		target_compile_definitions(s25update PRIVATE AFX_TARG_DEU)
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o
+			COMMAND ${CMAKE_RC_COMPILER} -I${CMAKE_CURRENT_SOURCE_DIR}/../win32/
+				-i${CMAKE_CURRENT_SOURCE_DIR}/../win32/s25update.rc
+				-o ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o
+		)
+		target_sources(s25update PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/s25update.res.o)
+	endif()
+endif()
+
+install(TARGETS s25update RUNTIME DESTINATION ${RTTR_EXTRA_BINDIR})
