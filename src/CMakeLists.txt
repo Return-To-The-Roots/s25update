@@ -1,10 +1,9 @@
 FIND_PACKAGE(CURL REQUIRED)
-FIND_PACKAGE(BZip2 REQUIRED)
+FIND_PACKAGE(BZip2 1.0.6 REQUIRED)
 FIND_PACKAGE(Boost 1.55 REQUIRED COMPONENTS filesystem)
 
 INCLUDE_DIRECTORIES(SYSTEM
                     ${CURL_INCLUDE_DIR}
-                    ${BZIP2_INCLUDE_DIR}
                     )
 
 ################################################################################
@@ -39,7 +38,7 @@ ADD_DEFINITIONS("-DARCH=\"${PLATFORM_ARCH}\"")
 rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})
 
 ADD_EXECUTABLE(s25update ${s25update_SRCS} ${SOURCES_BZIP} ${s25update_RC})
-TARGET_LINK_LIBRARIES(s25update PRIVATE ${CURL_LIBRARIES} ${BZIP2_LIBRARIES} Boost::filesystem nowide::static PUBLIC Boost::disable_autolinking)
+TARGET_LINK_LIBRARIES(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem nowide::static PUBLIC Boost::disable_autolinking)
 target_compile_features(s25update PUBLIC cxx_std_14)
 
 INSTALL(TARGETS s25update RUNTIME DESTINATION ${RTTR_EXTRA_BINDIR})
