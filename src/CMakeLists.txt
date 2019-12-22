@@ -11,7 +11,7 @@ rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})
 
 add_executable(s25update ${_sources})
 target_include_directories(s25update SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
-target_link_libraries(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem nowide::static Boost::disable_autolinking)
+target_link_libraries(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem Boost::nowide Boost::disable_autolinking)
 target_compile_features(s25update PUBLIC cxx_std_14)
 if(NOT PLATFORM_NAME OR NOT PLATFORM_ARCH)
 	message(FATAL_ERROR "PLATFORM_NAME or PLATFORM_ARCH not set")
