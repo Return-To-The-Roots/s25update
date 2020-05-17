@@ -4,7 +4,7 @@ find_package(Boost 1.55 REQUIRED COMPONENTS filesystem)
 
 set(_sources s25update.cpp md5.cpp md5sum.cpp s25update.h md5.h md5sum.h)
 if(ClangFormat_FOUND)
-    add_ClangFormat_files(${_sources})
+    add_ClangFormat_files(${_sources} ../win32/resource.h)
 endif()
 
 rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})

@@ -59,7 +59,7 @@ namespace bnw = boost::nowide;
 #error You have to set ARCH to your architecture (i386/x86_64/ppc)
 #endif
 
-#define HTTPHOST "http://nightly.siedler25.org/s25client/"
+#define HTTPHOST "https://nightly.siedler25.org/s25client/"
 #define STABLEPATH "stable/"
 #define NIGHTLYPATH "nightly/"
 #define FILEPATH "/updater"
