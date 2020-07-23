@@ -10,6 +10,7 @@
 #define MD5_H
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #define MD5_DIGEST_LENGTH 16
