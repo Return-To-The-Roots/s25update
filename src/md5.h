@@ -1,3 +1,4 @@
+#pragma once
 /*
  * md5.h:  Header file for Colin Plumb's MD5 implementation.
  *         Modified by Ian Jackson so as not to use Colin Plumb's
@@ -5,9 +6,6 @@
  *
  *         This file is in the public domain.
  */
-
-#ifndef MD5_H
-#define MD5_H
 
 #include <array>
 #include <cstddef>
@@ -28,5 +26,3 @@ void md5Init(md5Context* ctx);
 void md5Update(md5Context* ctx, uint8_t const* buf, size_t len);
 void md5Final(md5Context* ctx, std::array<uint8_t, 16>& digest);
 void md5Transform(std::array<uint32_t, 4>& buf, const std::array<uint32_t, 16>& in);
-
-#endif

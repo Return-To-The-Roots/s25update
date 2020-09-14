@@ -14,8 +14,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
-#ifndef S25UPDATE_H__
-#define S25UPDATE_H__
 
 #pragma once
 
@@ -34,5 +32,3 @@
 #endif // _WIN32 && _DEBUG
 #else
 #endif // !_WIN32
-
-#endif // S25UPDATE_H__

@@ -12,12 +12,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
-#ifndef MD5SUM_H
-#define MD5SUM_H
+
+#pragma once
 
 #include <cstdio>
 #include <string>
 
 int md5file(FILE* fp, std::string& digest);
-
-#endif // !MD5SUM_H
