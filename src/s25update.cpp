@@ -30,33 +30,33 @@
 #include <sstream>
 #include <vector>
 #ifdef _WIN32
-#include <windows.h>
-#include <shellapi.h>
+#    include <windows.h>
+#    include <shellapi.h>
 #endif
 
 namespace bfs = boost::filesystem;
 namespace bnw = boost::nowide;
 
 #ifndef TARGET
-#ifdef _WIN32
-#define TARGET "windows"
-#endif
+#    ifdef _WIN32
+#        define TARGET "windows"
+#    endif
 
-#ifdef __APPLE__
-#define TARGET "apple"
-#endif
+#    ifdef __APPLE__
+#        define TARGET "apple"
+#    endif
 
-#ifdef __linux__
-#define TARGET "linux"
-#endif
+#    ifdef __linux__
+#        define TARGET "linux"
+#    endif
 #endif
 
 #ifndef TARGET
-#error You have to set TARGET to your platform (windows/linux/apple)
+#    error You have to set TARGET to your platform (windows/linux/apple)
 #endif
 
 #ifndef ARCH
-#error You have to set ARCH to your architecture (i386/x86_64/ppc)
+#    error You have to set ARCH to your architecture (i386/x86_64/ppc)
 #endif
 
 #define HTTPHOST "https://nightly.siedler25.org/s25client/"
@@ -68,7 +68,7 @@ namespace bnw = boost::nowide;
 #define SAVEGAMEVERSION "/savegameversion"
 
 #ifndef SEE_MASK_NOASYNC
-#define SEE_MASK_NOASYNC 0x00000100
+#    define SEE_MASK_NOASYNC 0x00000100
 #endif
 
 #ifdef _WIN32
@@ -134,7 +134,8 @@ static int ProgressBarCallback(std::string* data, double dltotal, double dlnow, 
 
     bnw::cout << "\r" << *data;
     if(dltotal > 0) /* Avoid division by zero */
-        bnw::cout << std::setw(5) << std::setprecision(2) << std::setiosflags(std::ios::fixed) << (dlnow * 100.0 / dltotal) << "%";
+        bnw::cout << std::setw(5) << std::setprecision(2) << std::setiosflags(std::ios::fixed)
+                  << (dlnow * 100.0 / dltotal) << "%";
     bnw::cout << std::flush;
 
     return 0;
@@ -162,7 +163,8 @@ static std::string EscapeFile(const std::string& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "", std::string* progress = nullptr)
+static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "",
+                           std::string* progress = nullptr)
 {
     FILE* tofp = nullptr;
     bool ok = true;
@@ -258,7 +260,8 @@ std::string md5sum(const std::string& file)
 std::string get_last_error_string()
 {
     LPVOID lpMsgBuf;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(),
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+                   GetLastError(),
                    0, // Default language
                    (LPSTR)&lpMsgBuf, 0, NULL);
     std::string result = (LPCSTR)lpMsgBuf;
@@ -435,7 +438,8 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
         if(ec)
         {
             std::stringstream msg;
-            msg << "Failed to create directories to path " << path << " for " << name << ": " << ec.message() << std::endl;
+            msg << "Failed to create directories to path " << path << " for " << name << ": " << ec.message()
+                << std::endl;
             throw std::runtime_error(msg.str());
         }
     }
@@ -446,7 +450,8 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
         progress << " ";
 
     std::stringstream url;
-    url << httpBase << "/" << bfs::path(origFilePath).parent_path().string() << "/" << EscapeFile(name.string()) << ".bz2";
+    url << httpBase << "/" << bfs::path(origFilePath).parent_path().string() << "/" << EscapeFile(name.string())
+        << ".bz2";
 
     // download the file
     bool dlOk = DownloadFile(url.str(), bzfile, progress.str());
@@ -518,7 +523,8 @@ void copyOrSymlink(const bfs::path& srcFileName, const bfs::path& dstFilepath)
     boost::system::error_code ec;
     bfs::copy_file(srcFilepath, dstFilepath, bfs::copy_option::overwrite_if_exists, ec);
     if(ec)
-        bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << dstFilepath << "': " << ec.message() << std::endl;
+        bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << dstFilepath << "': " << ec.message()
+                  << std::endl;
 #else
     bnw::cout << "Creating symlink " << dstFilepath << std::endl;
     if(!bfs::exists(dstFilepath))
@@ -526,7 +532,8 @@ void copyOrSymlink(const bfs::path& srcFileName, const bfs::path& dstFilepath)
         boost::system::error_code ec;
         bfs::create_symlink(srcFileName, dstFilepath, ec);
         if(ec)
-            bnw::cerr << "Failed to create symlink: '" << dstFilepath << "' to '" << srcFileName << "': " << ec.message() << std::endl;
+            bnw::cerr << "Failed to create symlink: '" << dstFilepath << "' to '" << srcFileName
+                      << "': " << ec.message() << std::endl;
     }
 #endif
 }
@@ -640,8 +647,8 @@ void executeUpdate(int argc, char* argv[])
         bnw::cout << "Parsing update list..." << std::endl;
 
     const auto files = parseFileList(filelist);
-    const auto itSavegameversion =
-      std::find_if(files.begin(), files.end(), [](const auto& it) { return it.second.find(SAVEGAMEVERSION) != std::string::npos; });
+    const auto itSavegameversion = std::find_if(
+      files.begin(), files.end(), [](const auto& it) { return it.second.find(SAVEGAMEVERSION) != std::string::npos; });
 
     if(itSavegameversion != files.end() && bfs::exists(itSavegameversion->second))
     {
