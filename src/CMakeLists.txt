@@ -1,8 +1,12 @@
+# Copyright (C) 2005 - 2021 Settlers Freaks <sf-team at siedler25.org>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 find_package(CURL REQUIRED)
 find_package(BZip2 1.0.6 REQUIRED)
 find_package(Boost 1.55 REQUIRED COMPONENTS filesystem)
 
-set(_sources s25update.cpp md5.cpp md5sum.cpp s25update.h md5.h md5sum.h)
+set(_sources s25update.cpp md5sum.cpp s25update.h md5sum.h)
 if(ClangFormat_FOUND)
     add_ClangFormat_files(${_sources} ../win32/resource.h)
 endif()
@@ -11,7 +15,7 @@ rttr_set_output_dir(RUNTIME ${RTTR_EXTRA_BINDIR})
 
 add_executable(s25update ${_sources})
 target_include_directories(s25update SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
-target_link_libraries(s25update PRIVATE ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem Boost::nowide Boost::disable_autolinking)
+target_link_libraries(s25update PRIVATE s25util::common ${CURL_LIBRARIES} BZip2::BZip2 Boost::filesystem Boost::nowide Boost::disable_autolinking)
 target_compile_features(s25update PUBLIC cxx_std_14)
 if(NOT PLATFORM_NAME OR NOT PLATFORM_ARCH)
 	message(FATAL_ERROR "PLATFORM_NAME or PLATFORM_ARCH not set")
