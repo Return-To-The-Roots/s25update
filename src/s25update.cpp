@@ -68,7 +68,7 @@ namespace {
  */
 static short backslashfix_y;
 
-static short backslashrfix(short y)
+short backslashrfix(short y)
 {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     HANDLE hConsoleOutput;
@@ -88,7 +88,7 @@ static short backslashrfix(short y)
 /**
  *  curl filewriter callback
  */
-static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
+size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
     size_t realsize = size * nmemb;
 
@@ -101,7 +101,7 @@ static size_t WriteCallback(void* ptr, size_t size, size_t nmemb, FILE* stream)
 /**
  *  curl std::stringwriter callback
  */
-static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, std::string* data)
+size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
     size_t realsize = size * nmemb;
 
@@ -114,7 +114,7 @@ static size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, std::str
 /**
  *  curl progressbar callback
  */
-static int ProgressBarCallback(std::string* data, double dltotal, double dlnow, double /*ultotal*/, double /*ulnow*/)
+int ProgressBarCallback(std::string* data, double dltotal, double dlnow, double /*ultotal*/, double /*ulnow*/)
 {
 #ifdef _WIN32
     // \r not working fix
@@ -134,7 +134,7 @@ static int ProgressBarCallback(std::string* data, double dltotal, double dlnow, 
 /**
  *  curl escape wrapper
  */
-static std::string EscapeFile(const std::string& file)
+std::string EscapeFile(const std::string& file)
 {
     CURL* curl_handle = curl_easy_init();
     char* escaped = curl_easy_escape(curl_handle, file.c_str(), static_cast<int>(file.length()));
@@ -153,8 +153,8 @@ static std::string EscapeFile(const std::string& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "",
-                           std::string* progress = nullptr)
+bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "",
+                    std::string* progress = nullptr)
 {
     FILE* tofp = nullptr;
     bool ok = true;
@@ -213,12 +213,12 @@ static bool DoDownloadFile(const std::string& url, std::string* to, const bfs::p
     return ok;
 }
 
-static bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
+bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
 {
     return DoDownloadFile(url, nullptr, path, &progress);
 }
 
-static boost::optional<std::string> DownloadFile(const std::string& url)
+boost::optional<std::string> DownloadFile(const std::string& url)
 {
     std::string tmp;
     if(DoDownloadFile(url, &tmp))
