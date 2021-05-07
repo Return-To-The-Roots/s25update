@@ -59,6 +59,8 @@ namespace bnw = boost::nowide;
 #    define SEE_MASK_NOASYNC 0x00000100
 #endif
 
+namespace {
+
 #ifdef _WIN32
 /**
  *  \r fix-function for the stupid windows-console
@@ -674,6 +676,7 @@ void executeUpdate(int argc, char* argv[])
     if(updated)
         bnw::cout << "Update finished!" << std::endl;
 }
+} // namespace
 
 /**
  *  main function
