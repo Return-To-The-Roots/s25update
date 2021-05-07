@@ -344,7 +344,7 @@ bool runAsAdmin(int argc, char* argv[])
         arguments << argv[i];
 
     // Launch itself as administrator.
-    SHELLEXECUTEINFOA sei = {sizeof(sei)};
+    SHELLEXECUTEINFOA sei{};
     sei.lpVerb = "runas";
     sei.lpFile = argv[0];
     sei.hwnd = GetConsoleWindow();
