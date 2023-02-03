@@ -514,7 +514,13 @@ void copyOrSymlink(const bfs::path& srcFileName, const bfs::path& dstFilepath)
     bfs::path path = dstFilepath.parent_path();
     bfs::path srcFilepath = path / srcFileName;
     boost::system::error_code ec;
-    bfs::copy_file(srcFilepath, dstFilepath, bfs::copy_option::overwrite_if_exists, ec);
+    constexpr auto overwrite_existing =
+#    if BOOST_VERSION >= 107400
+      bfs::copy_options::overwrite_existing;
+#    else
+      bfs::copy_option::overwrite_if_exists;
+#    endif
+    bfs::copy_file(srcFilepath, dstFilepath, overwrite_existing, ec);
     if(ec)
         bnw::cerr << "Failed to copy file '" << srcFilepath << "' to '" << dstFilepath << "': " << ec.message()
                   << std::endl;
