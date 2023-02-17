@@ -1,0 +1,28 @@
+# Copyright (C) 2005 - 2023 Settlers Freaks <sf-team at siedler25.org>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+name: Static analysis
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{format('staticAna-{0}:{1}', github.repository, github.ref)}}
+  cancel-in-progress: true
+
+jobs:
+  FormattingAndLicensing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Formatting
+        uses: DoozyX/clang-format-lint-action@v0.15
+        with:
+          source: src
+          clangFormatVersion: 10
+      - name: Check licensing
+        run:
+          pip install --user reuse
+          reuse lint
