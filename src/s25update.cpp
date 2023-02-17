@@ -22,6 +22,11 @@
 #    include <shellapi.h>
 #endif
 
+#ifndef CURL_AT_LEAST_VERSION
+// taken from curl/curlver.h of libCURL 7.43+ for easier readability.
+#    define CURL_AT_LEAST_VERSION(x, y, z) (LIBCURL_VERSION_NUM >= ((x) << 16 | (y) << 8 | (z)))
+#endif
+
 namespace bfs = boost::filesystem;
 namespace bnw = boost::nowide;
 
@@ -114,7 +119,12 @@ size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, std::string* da
 /**
  *  curl progressbar callback
  */
+#if CURL_AT_LEAST_VERSION(7, 32, 00)
+static size_t ProgressBarCallback(std::string* data, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*ultotal*/,
+                                  curl_off_t /*ulnow*/)
+#else
 int ProgressBarCallback(std::string* data, double dltotal, double dlnow, double /*ultotal*/, double /*ulnow*/)
+#endif
 {
 #ifdef _WIN32
     // \r not working fix
@@ -191,8 +201,13 @@ bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& pa
     if(progress)
     {
         curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
+#if CURL_AT_LEAST_VERSION(7, 32, 00)
+        curl_easy_setopt(curl_handle, CURLOPT_XFERINFOFUNCTION, ProgressBarCallback);      //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_XFERINFODATA, static_cast<void*>(progress)); //-V111
+#else
         curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);      //-V111
         curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(progress)); //-V111
+#endif
     }
 
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
