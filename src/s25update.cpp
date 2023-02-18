@@ -120,8 +120,8 @@ size_t WriteMemoryCallback(void* ptr, size_t size, size_t nmemb, std::string* da
  *  curl progressbar callback
  */
 #if CURL_AT_LEAST_VERSION(7, 32, 00)
-static size_t ProgressBarCallback(std::string* data, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*ultotal*/,
-                                  curl_off_t /*ulnow*/)
+size_t ProgressBarCallback(std::string* data, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*ultotal*/,
+                           curl_off_t /*ulnow*/)
 #else
 int ProgressBarCallback(std::string* data, double dltotal, double dlnow, double /*ultotal*/, double /*ulnow*/)
 #endif
