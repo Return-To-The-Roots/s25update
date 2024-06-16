@@ -1,9 +1,10 @@
-// Copyright (C) 2005 - 2021 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2024 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "s25update.h" // IWYU pragma: keep
 #include "md5sum.h"
+#include "s25util/file_handle.h"
 #include "s25util/warningSuppression.h"
 #include <boost/filesystem.hpp>
 #include <boost/nowide/cstdio.hpp>
@@ -16,6 +17,7 @@
 #include <curl/curl.h>
 #include <iomanip>
 #include <sstream>
+#include <variant>
 #include <vector>
 #ifdef _WIN32
 #    include <windows.h>
@@ -163,14 +165,28 @@ std::string EscapeFile(const std::string& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& path = "",
+bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs::path>& target,
                     std::string* progress = nullptr)
 {
-    FILE* tofp = nullptr;
-    bool ok = true;
+    std::string* memory;
+    s25util::file_handle target_fh;
+    bfs::path tmpPath;
 
-    bfs::path tmpPath = path;
-    tmpPath += ".new";
+    if(std::holds_alternative<bfs::path>(target))
+    {
+        tmpPath = std::get<bfs::path>(target);
+        target_fh.reset(boost::nowide::fopen(tmpPath.string().c_str(), "wb"));
+        if(!target_fh)
+        {
+            bnw::cerr << "Can't open file \"" << tmpPath << "\"!!!!" << std::endl;
+            return false;
+        }
+    } else
+    {
+        memory = std::get<std::string*>(target);
+        if(!memory)
+            throw ::std::logic_error("No memory pointer given");
+    }
 
     CURL* curl_handle = curl_easy_init();
 
@@ -179,22 +195,14 @@ bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& pa
     curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
     // Write file to Memory?
-    if(path.empty())
+    if(!tmpPath.empty())
     {
-        if(!to)
-            throw std::logic_error("No target for download given");
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback); //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(to));  //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);    //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(memory)); //-V111
     } else
     {
-        tofp = boost::nowide::fopen(tmpPath.string().c_str(), "wb");
-        if(!tofp)
-        {
-            bnw::cerr << "Can't open file \"" << tmpPath << "\"!!!!" << std::endl;
-            ok = false;
-        }
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);        //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(tofp)); //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);              //-V111
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(*target_fh)); //-V111
     }
 
     // Show Progress?
@@ -212,25 +220,18 @@ bool DoDownloadFile(const std::string& url, std::string* to, const bfs::path& pa
 
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
 
-    if(ok)
-        ok = curl_easy_perform(curl_handle) == 0;
+    const auto ok = curl_easy_perform(curl_handle) == 0;
+
+    if(ok && !tmpPath.empty())
+        rename(tmpPath, std::get<bfs::path>(target));
 
     curl_easy_cleanup(curl_handle);
-
-    if(!path.empty())
-    {
-        if(tofp)
-            fclose(tofp);
-        if(ok)
-            rename(tmpPath, path);
-    }
-
     return ok;
 }
 
 bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
 {
-    return DoDownloadFile(url, nullptr, path, &progress);
+    return DoDownloadFile(url, path, &progress);
 }
 
 boost::optional<std::string> DownloadFile(const std::string& url)
@@ -249,12 +250,10 @@ std::string md5sum(const std::string& file)
 {
     std::string digest;
 
-    FILE* fp = boost::nowide::fopen(file.c_str(), "rb");
-    if(fp)
-    {
-        md5file(fp, digest);
-        fclose(fp);
-    }
+    s25util::file_handle fh(boost::nowide::fopen(file.c_str(), "rb"));
+    if(fh)
+        md5file(*fh, digest);
+
     return digest;
 }
 
@@ -473,12 +472,12 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
 
     // extract the file
     int bzerror = BZ_OK;
-    FILE* bzfp = boost::nowide::fopen(bzfile.string().c_str(), "rb");
-    if(!bzfp)
+    s25util::file_handle bz_fh(boost::nowide::fopen(bzfile.string().c_str(), "rb"));
+    if(!bz_fh)
         throw std::runtime_error("decompression failed: download failure?");
 
     bzerror = BZ_OK;
-    BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, bzfp, 0, 0, nullptr, 0);
+    BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, *bz_fh, 0, 0, nullptr, 0);
     if(!bz2fp)
         throw std::runtime_error("decompression failed: compressed file corrupt?");
 
@@ -508,7 +507,6 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
     bnw::cout << "ok";
 
     BZ2_bzReadClose(&bzerror, bz2fp);
-    fclose(bzfp);
 
     // remove compressed file
     bfs::remove(bzfile);
