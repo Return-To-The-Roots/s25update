@@ -10,12 +10,12 @@
 #include <boost/nowide/cstdio.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/iostream.hpp>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <array>
 #include <bzlib.h>
 #include <curl/curl.h>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <variant>
 #include <vector>
@@ -234,13 +234,13 @@ bool DownloadFile(const std::string& url, const bfs::path& path, std::string pro
     return DoDownloadFile(url, path, &progress);
 }
 
-boost::optional<std::string> DownloadFile(const std::string& url)
+std::optional<std::string> DownloadFile(const std::string& url)
 {
     std::string tmp;
     if(DoDownloadFile(url, &tmp))
         return tmp;
     else
-        return boost::none;
+        return std::nullopt;
 }
 
 /**
