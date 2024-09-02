@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <optional>
 #include <sstream>
+#include <utility>
 #include <variant>
 #include <vector>
 #ifdef _WIN32
@@ -67,6 +68,39 @@ namespace bnw = boost::nowide;
 #endif
 
 namespace {
+
+class EasyCurl
+{
+    CURL* h_;
+
+public:
+    EasyCurl() : h_(curl_easy_init()) {}
+    EasyCurl(EasyCurl&& rhs) noexcept : h_(std::exchange(rhs.h_, nullptr)) {}
+    EasyCurl& operator=(EasyCurl&& rhs) noexcept
+    {
+        h_ = std::exchange(rhs.h_, nullptr);
+        return *this;
+    }
+    ~EasyCurl() { curl_easy_cleanup(h_); }
+
+    template<typename T>
+    void setOpt(CURLoption option, T value)
+    {
+        curl_easy_setopt(h_, option, value); //-V111
+    }
+
+    bool perform() { return curl_easy_perform(h_) == 0; }
+
+    std::optional<std::string> escape(const std::string& s) const
+    {
+        char* out = curl_easy_escape(h_, s.c_str(), static_cast<int>(s.length()));
+        if(!out)
+            return std::nullopt;
+        std::optional<std::string> result{out};
+        curl_free(out);
+        return result;
+    }
+};
 
 #ifdef _WIN32
 /**
@@ -146,20 +180,14 @@ int ProgressBarCallback(std::string* data, double dltotal, double dlnow, double 
 /**
  *  curl escape wrapper
  */
-std::string EscapeFile(const std::string& file)
+std::string EscapeFile(const bfs::path& file)
 {
-    CURL* curl_handle = curl_easy_init();
-    char* escaped = curl_easy_escape(curl_handle, file.c_str(), static_cast<int>(file.length()));
-    std::string result;
-    if(escaped)
-    {
-        result = escaped;
-        curl_free(escaped);
-    }
-
-    curl_easy_cleanup(curl_handle);
-
-    return result;
+    static EasyCurl curl;
+    const auto result = curl.escape(file.string());
+    if(result)
+        return *result;
+    else
+        throw std::invalid_argument("Failed to escape '" + file.string() + '"');
 }
 
 /**
@@ -168,65 +196,46 @@ std::string EscapeFile(const std::string& file)
 bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs::path>& target,
                     std::string* progress = nullptr)
 {
-    std::string* memory;
-    s25util::file_handle target_fh;
-    bfs::path tmpPath;
+    EasyCurl curl;
 
-    if(std::holds_alternative<bfs::path>(target))
-    {
-        tmpPath = std::get<bfs::path>(target);
-        target_fh.reset(boost::nowide::fopen(tmpPath.string().c_str(), "wb"));
-        if(!target_fh)
-        {
-            bnw::cerr << "Can't open file \"" << tmpPath << "\"!!!!" << std::endl;
-            return false;
-        }
-    } else
-    {
-        memory = std::get<std::string*>(target);
-        if(!memory)
-            throw ::std::logic_error("No memory pointer given");
-    }
-
-    CURL* curl_handle = curl_easy_init();
-
-    curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str()); //-V111
-    curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "s25update/1.1");
-    curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
-
-    // Write file to Memory?
-    if(!tmpPath.empty())
-    {
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);    //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(memory)); //-V111
-    } else
-    {
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteCallback);              //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, static_cast<void*>(*target_fh)); //-V111
-    }
+    curl.setOpt(CURLOPT_URL, url.c_str());
+    curl.setOpt(CURLOPT_USERAGENT, "s25update/1.1");
+    curl.setOpt(CURLOPT_FAILONERROR, 1L);
 
     // Show Progress?
     if(progress)
     {
-        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
+        curl.setOpt(CURLOPT_NOPROGRESS, 0);
 #if CURL_AT_LEAST_VERSION(7, 32, 00)
-        curl_easy_setopt(curl_handle, CURLOPT_XFERINFOFUNCTION, ProgressBarCallback);      //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_XFERINFODATA, static_cast<void*>(progress)); //-V111
+        curl.setOpt(CURLOPT_XFERINFOFUNCTION, ProgressBarCallback);
+        curl.setOpt(CURLOPT_XFERINFODATA, static_cast<void*>(progress));
 #else
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);      //-V111
-        curl_easy_setopt(curl_handle, CURLOPT_PROGRESSDATA, static_cast<void*>(progress)); //-V111
+        curl.setOpt(CURLOPT_PROGRESSFUNCTION, ProgressBarCallback);
+        curl.setOpt(CURLOPT_PROGRESSDATA, static_cast<void*>(progress));
 #endif
     }
 
-    // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
+    if(std::holds_alternative<bfs::path>(target))
+    {
+        curl.setOpt(CURLOPT_WRITEFUNCTION, WriteCallback);
+        const auto& targetPath = std::get<bfs::path>(target);
+        s25util::file_handle target_fh(boost::nowide::fopen(targetPath.string().c_str(), "wb"));
+        if(!target_fh)
+        {
+            bnw::cerr << "Can't open file " << targetPath << "!" << std::endl;
+            return false;
+        }
+        curl.setOpt(CURLOPT_WRITEDATA, static_cast<void*>(*target_fh));
+    } else
+    {
+        curl.setOpt(CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        auto* memory = std::get<std::string*>(target);
+        if(!memory)
+            throw ::std::logic_error("No memory pointer given");
+        curl.setOpt(CURLOPT_WRITEDATA, static_cast<void*>(memory));
+    }
 
-    const auto ok = curl_easy_perform(curl_handle) == 0;
-
-    if(ok && !tmpPath.empty())
-        rename(tmpPath, std::get<bfs::path>(target));
-
-    curl_easy_cleanup(curl_handle);
-    return ok;
+    return curl.perform();
 }
 
 bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
