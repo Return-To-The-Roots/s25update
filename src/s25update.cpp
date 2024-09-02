@@ -644,9 +644,12 @@ void executeUpdate(int argc, char* argv[])
     const auto possibleBases = getPossibleHttpBases(nightly);
     for(size_t i = 0; i < possibleBases.size(); i++)
     {
-        auto filelistOpt = DownloadFile(possibleBases[i] + FILELIST);
+        const std::string url = possibleBases[i] + FILELIST;
+        if(verbose)
+            bnw::cout << "Trying to download update filelist from '" << url << '"' << std::endl;
+        auto filelistOpt = DownloadFile(url);
         if(!filelistOpt)
-            bnw::cout << "Warning: Was not able to get masterfile " << i << ", trying older one" << std::endl;
+            bnw::cout << "Warning: Was not able to get update filelist " << i << ", trying older one" << std::endl;
         else
         {
             filelist = *filelistOpt;
@@ -655,7 +658,7 @@ void executeUpdate(int argc, char* argv[])
         }
     }
     if(filelist.empty())
-        throw std::runtime_error("Could not get any master file");
+        throw std::runtime_error("Could not get any update filelist");
 
     // httpbase now includes targetpath and filepath
 
