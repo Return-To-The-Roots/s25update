@@ -89,7 +89,7 @@ public:
         curl_easy_setopt(h_, option, value); //-V111
     }
 
-    bool perform() { return curl_easy_perform(h_) == 0; }
+    CURLcode perform() { return curl_easy_perform(h_); }
 
     std::optional<std::string> escape(const std::string& s) const
     {
@@ -235,7 +235,11 @@ bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs
         curl.setOpt(CURLOPT_WRITEDATA, static_cast<void*>(memory));
     }
 
-    return curl.perform();
+    const auto res = curl.perform();
+    if(res == CURLE_OK)
+        return true;
+    bnw::cerr << "Download error: " << curl_easy_strerror(res) << '\n';
+    return false;
 }
 
 bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
