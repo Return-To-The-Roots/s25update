@@ -476,7 +476,7 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
     if(!dlOk)
     {
         bnw::cout << "failed!" << std::endl;
-        throw std::runtime_error("Download of " + bzfile.string() + "failed!");
+        throw std::runtime_error("Download of " + bzfile.string() + " failed!");
     }
 
     // extract the file
