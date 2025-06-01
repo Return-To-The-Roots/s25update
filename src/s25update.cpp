@@ -193,7 +193,7 @@ std::string EscapeFile(const bfs::path& file)
 /**
  *  httpdownload function (to std::string or to file, with or without progressbar)
  */
-bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs::path>& target,
+bool DoDownloadFile(const std::string& url, const std::variant<std::string*, FILE*>& target,
                     std::string* progress = nullptr)
 {
     EasyCurl curl;
@@ -215,17 +215,10 @@ bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs
 #endif
     }
 
-    if(std::holds_alternative<bfs::path>(target))
+    if(std::holds_alternative<FILE*>(target))
     {
         curl.setOpt(CURLOPT_WRITEFUNCTION, WriteCallback);
-        const auto& targetPath = std::get<bfs::path>(target);
-        s25util::file_handle target_fh(boost::nowide::fopen(targetPath.string().c_str(), "wb"));
-        if(!target_fh)
-        {
-            bnw::cerr << "Can't open file " << targetPath << "!" << std::endl;
-            return false;
-        }
-        curl.setOpt(CURLOPT_WRITEDATA, static_cast<void*>(*target_fh));
+        curl.setOpt(CURLOPT_WRITEDATA, static_cast<void*>(std::get<FILE*>(target)));
     } else
     {
         curl.setOpt(CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -244,7 +237,13 @@ bool DoDownloadFile(const std::string& url, const std::variant<std::string*, bfs
 
 bool DownloadFile(const std::string& url, const bfs::path& path, std::string progress = "")
 {
-    return DoDownloadFile(url, path, &progress);
+    s25util::file_handle target_fh(boost::nowide::fopen(path.string().c_str(), "wb"));
+    if(!target_fh)
+    {
+        bnw::cerr << "Can't open file " << path << "!" << std::endl;
+        return false;
+    }
+    return DoDownloadFile(url, *target_fh, &progress);
 }
 
 std::optional<std::string> DownloadFile(const std::string& url)
