@@ -585,24 +585,25 @@ auto getPossibleHttpBases(const bool nightly)
 
 void executeUpdate(int argc, char* argv[])
 {
+    using namespace std::string_literals;
     bool updated = false;
     bool verbose = false;
     bool nightly = true;
-    bfs::path workPath = bfs::path(argv[0]).parent_path().lexically_normal();
+    bfs::path workPath = bfs::absolute(argv[0]).parent_path().lexically_normal();
 
     // If the installation is the default one, update current installation
     // TODO: get these paths from cmake and implement some kind of automatic search?
 #ifdef _WIN32
     bfs::path tmpPath = workPath.parent_path();
-    if(bfs::exists(workPath.parent_path() / std::string("RTTR/s25update.exe")))
+    if(bfs::exists(tmpPath / "RTTR/s25update.exe"s))
         workPath = tmpPath;
 #elif defined(__APPLE__)
     bfs::path tmpPath = workPath.parent_path().parent_path().parent_path();
-    if(bfs::exists(tmpPath / std::string("s25client.app/Contents/MacOS/s25update")))
+    if(bfs::exists(tmpPath / "s25client.app/Contents/MacOS/s25update"s))
         workPath = tmpPath;
 #else
     bfs::path tmpPath = workPath.parent_path();
-    if(bfs::exists(tmpPath / std::string("libexec/s25rttr/s25update")))
+    if(bfs::exists(tmpPath / "libexec/s25rttr/s25update"s))
         workPath = tmpPath;
 #endif
 
