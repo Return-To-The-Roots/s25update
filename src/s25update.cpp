@@ -1,4 +1,4 @@
-// Copyright (C) 2005 - 2024 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2026 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -436,6 +436,50 @@ auto parseLinkList(const std::string& linkFileContents)
     return links;
 }
 
+struct BzFileCloser
+{
+    void operator()(BZFILE* bz2fp)
+    {
+        int bzerror;
+        BZ2_bzReadClose(&bzerror, bz2fp);
+    }
+};
+
+void extractFile(const bfs::path& bzFile, const bfs::path& targetFilepath)
+{
+    s25util::file_handle bz_fh(boost::nowide::fopen(bzFile.string().c_str(), "rb"));
+    if(!bz_fh)
+        throw std::runtime_error("decompression failed: download failure?");
+
+    int bzerror = BZ_OK;
+    std::unique_ptr<BZFILE, BzFileCloser> bz2fp(BZ2_bzReadOpen(&bzerror, *bz_fh, 0, 0, nullptr, 0));
+    if(!bz2fp)
+        throw std::runtime_error("decompression failed: compressed file corrupt?");
+
+    bnw::ofstream outputFile(targetFilepath, bnw::ofstream::binary | bnw::ofstream::trunc);
+    if(!outputFile)
+    {
+        bfs::path bakFilePath(targetFilepath);
+        bakFilePath += ".bak";
+        boost::system::error_code error;
+        bfs::rename(targetFilepath, bakFilePath, error);
+        // move file out of the way ...
+        if(error)
+            throw std::runtime_error("failed to move blocked file " + targetFilepath.string() + " out of the way ...");
+        outputFile.open(targetFilepath, bnw::ofstream::binary | bnw::ofstream::trunc);
+    }
+    if(!outputFile)
+        throw std::runtime_error("Failed to open output file " + targetFilepath.string());
+
+    while(bzerror == BZ_OK)
+    {
+        std::array<char, 1024> buffer;
+        unsigned read = BZ2_bzRead(&bzerror, bz2fp.get(), buffer.data(), static_cast<int>(buffer.size()));
+        if(!outputFile.write(buffer.data(), read))
+            throw std::runtime_error("Failed to write to disk");
+    }
+}
+
 void updateFile(const std::string& httpBase, const std::string& origFilePath, const bool verbose)
 {
     const bfs::path filepath = bfs::path(origFilePath).make_preferred();
@@ -473,57 +517,19 @@ void updateFile(const std::string& httpBase, const std::string& origFilePath, co
         << ".bz2";
 
     // download the file
-    bool dlOk = DownloadFile(url.str(), bzfile, progress.str());
-
-    bnw::cout << " - ";
-    if(!dlOk)
+    if(!DownloadFile(url.str(), bzfile, progress.str()))
     {
-        bnw::cout << "failed!" << std::endl;
+        bnw::cerr << '\r' << progress.str() << " - failed!" << std::endl;
         throw std::runtime_error("Download of " + bzfile.string() + " failed!");
     }
 
     // extract the file
-    int bzerror = BZ_OK;
-    s25util::file_handle bz_fh(boost::nowide::fopen(bzfile.string().c_str(), "rb"));
-    if(!bz_fh)
-        throw std::runtime_error("decompression failed: download failure?");
+    extractFile(bzfile, filepath);
 
-    bzerror = BZ_OK;
-    BZFILE* bz2fp = BZ2_bzReadOpen(&bzerror, *bz_fh, 0, 0, nullptr, 0);
-    if(!bz2fp)
-        throw std::runtime_error("decompression failed: compressed file corrupt?");
-
-    bnw::ofstream outputFile(filepath, bnw::ofstream::binary | bnw::ofstream::trunc);
-    if(!outputFile)
-    {
-        bfs::path bakFilePath(filepath);
-        bakFilePath += ".bak";
-        boost::system::error_code error;
-        bfs::rename(filepath, bakFilePath, error);
-        // move file out of the way ...
-        if(error)
-            throw std::runtime_error("failed to move blocked file " + filepath.string() + " out of the way ...");
-        outputFile.open(filepath, bnw::ofstream::binary | bnw::ofstream::trunc);
-    }
-    if(!outputFile)
-        throw std::runtime_error("Failed to open output file " + filepath.string());
-
-    while(bzerror == BZ_OK)
-    {
-        std::array<char, 1024> buffer;
-        unsigned read = BZ2_bzRead(&bzerror, bz2fp, buffer.data(), static_cast<int>(buffer.size()));
-        if(!outputFile.write(buffer.data(), read))
-            bnw::cerr << "failed to write to disk" << std::endl;
-    }
-
-    bnw::cout << "ok";
-
-    BZ2_bzReadClose(&bzerror, bz2fp);
+    bnw::cout << " - ok" << std::endl;
 
     // remove compressed file
     bfs::remove(bzfile);
-
-    bnw::cout << std::endl;
 
 #ifdef _WIN32
     // \r not working fix
