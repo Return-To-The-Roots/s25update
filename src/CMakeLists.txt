@@ -1,10 +1,10 @@
-# Copyright (C) 2005 - 2021 Settlers Freaks <sf-team at siedler25.org>
+# Copyright (C) 2005 - 2026 Settlers Freaks <sf-team at siedler25.org>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 find_package(CURL REQUIRED)
 find_package(BZip2 1.0.6 REQUIRED)
-find_package(Boost 1.55 REQUIRED COMPONENTS filesystem)
+find_package(Boost 1.71 REQUIRED COMPONENTS filesystem)
 
 set(_sources s25update.cpp md5sum.cpp s25update.h md5sum.h)
 if(ClangFormat_FOUND)
